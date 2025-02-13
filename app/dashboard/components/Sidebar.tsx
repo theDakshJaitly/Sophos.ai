@@ -4,7 +4,7 @@ import { Folder, Settings, User, Plus } from "lucide-react"
 export function Sidebar() {
   return (
     <div className="w-64 bg-white p-4 flex flex-col h-full">
-      <h2 className="text-2xl font-bold mb-4">Projects</h2>
+      <h2 className="text-2xl font-bold mb-4">Sophos.ai</h2>
       <div className="flex-grow overflow-auto">
         <ProjectList />
       </div>
@@ -27,10 +27,10 @@ export function Sidebar() {
 
 function ProjectList() {
   const projects = [
-    { id: 1, name: "Project A", group: "Work" },
-    { id: 2, name: "Project B", group: "Personal" },
-    { id: 3, name: "Project C", group: "Work" },
-    { id: 4, name: "Project D", group: "Study" },
+    { id: 1, name: "ML", group: "Work" },
+    { id: 2, name: "Linear Reg", group: "Personal" },
+    { id: 3, name: "Linear Algebra", group: "Work" },
+    { id: 4, name: "Statistics", group: "Study" },
   ]
 
   return (

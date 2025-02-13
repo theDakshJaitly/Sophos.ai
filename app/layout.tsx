@@ -6,7 +6,7 @@ import type React from "react" // Added import for React
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "AI Document Assistant",
+  title: "Sophos",
   description: "Revolutionize your document workflow with AI-powered organization, summarization, and research.",
     generator: 'v0.dev'
 }
