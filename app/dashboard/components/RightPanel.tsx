@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileText, Brain } from "lucide-react";
+import { Upload, FileText, Brain, Wrench } from "lucide-react"; // Add Wrench to imports
 import { useState } from "react";
 import { documentApi } from "../../../utils/api"; // Updated import path
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,10 @@ export function RightPanel() {
 
   return (
     <div className="w-80 bg-white p-4 flex flex-col h-full">
-      <h2 className="text-2xl font-bold mb-4">Tools</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-2xl font-bold">Tools</h2>
+        <Wrench className="h-6 w-6" />
+      </div>
       <Card className="mb-4">
         <CardContent className="pt-6">
           <div 

@@ -1,10 +1,16 @@
 import { Button } from "@/components/ui/button"
 import { Folder, Settings, User, Plus } from "lucide-react"
+import { Space_Grotesk } from 'next/font/google'
+
+const spaceGrotesk = Space_Grotesk({ 
+  subsets: ['latin'],
+  weight: ['700']
+})
 
 export function Sidebar() {
   return (
     <div className="w-64 bg-white p-4 flex flex-col h-full">
-      <h2 className="text-2xl font-bold mb-4">Sophos.ai</h2>
+      <h2 className={`text-2xl font-bold mb-4 ${spaceGrotesk.className}`}>Sophos.ai</h2>
       <div className="flex-grow overflow-auto">
         <ProjectList />
       </div>

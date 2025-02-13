@@ -16,11 +16,11 @@ export function ChatTab() {
   return (
     <div className="h-full flex flex-col relative">
       <div className="flex-1 overflow-auto p-4 space-y-4 pb-20">
-        <ChatMessage sender="ai" message="Hello! How can I assist you with your documents today?" />
-        <ChatMessage sender="user" message="Can you summarize the main points of the last document I uploaded?" />
+        <ChatMessage sender="ai" message="Hello! How can I assist you with your study today?" />
+        <ChatMessage sender="user" message="YOO Can you explain Linear Regression to me" />
         <ChatMessage
           sender="ai"
-          message="I'll analyze the last document you uploaded and provide a summary of its main points. Please give me a moment..."
+          message="Alright let me think and refer to relevant docs"
         />
       </div>
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">

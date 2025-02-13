@@ -2,6 +2,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import type React from "react" // Added import for React
+import { GeistSans } from 'geist/font' 
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,7 +23,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-
-
-import './globals.css'
