@@ -23,7 +23,7 @@ export function ChatTab() {
           message="Alright let me think and refer to relevant docs"
         />
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t rounded-lg shadow-sm mx-4">
         <form className="flex space-x-2">
           <Input placeholder="Type your message here..." className="flex-grow" />
           <Button type="submit">

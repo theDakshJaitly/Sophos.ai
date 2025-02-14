@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronRight, FileText, PenTool, Search, Share2, Zap } from "lucide-react"
+import { ChevronRight, FileText, PenTool, Search, Share2, Zap, Users, Users2, Store } from "lucide-react"
 
 export default function Home() {
   return (
@@ -140,6 +140,28 @@ export default function Home() {
                   <CardDescription>
                     We're developing features that will allow you to create custom document processing workflows,
                     tailored to your specific needs and industry requirements.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Users2 className="w-8 h-8 mb-2" />
+                  <CardTitle>Social Study Sessions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Connect with friends, classmated, and colleagues to collaborate on document analysis and research
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Store className="w-8 h-8 mb-2" />
+                  <CardTitle>Workflow Marketplace</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Workflows designed by experts in various fields will be available for purchase and integration into your document processing pipeline. Or sell your own workflows to other users!
                   </CardDescription>
                 </CardContent>
               </Card>
