@@ -77,7 +77,7 @@ export function RightPanel() {
         <FileText className="mr-2 h-4 w-4" /> Generate Flashcards
       </Button>
       <Button className="mb-4 justify-start" variant="outline">
-        <Brain className="mr-2 h-4 w-4" /> Create Quiz
+        <Brain className="mr-2 h-4 w-4" /> Make Quiz
       </Button>
       <div className="mt-auto">
         <h3 className="font-semibold mb-2">Recent Uploads</h3>
