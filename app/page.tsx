@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronRight, FileText, PenTool, Search, Share2, Zap, Users, Users2, Store } from "lucide-react"
+import { WaveBackground } from "@/components/ui/wave-background"
 
 export default function Home() {
   return (
@@ -12,7 +13,7 @@ export default function Home() {
             <Zap className="h-6 w-6" />
             <span className="text-sm font-medium">Daksh Jaitly</span>
           </div>
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center hover:underlien underline-offset-4">
             <h1 className="text-xl font-bold">Sophos.ai</h1>
           </div>
           <nav className="flex gap-4 sm:gap-6 w-[200px] justify-end">
@@ -24,8 +25,9 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
-          <div className="container px-4 md:px-6 max-w-7xl mx-auto">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 relative">
+          <WaveBackground />
+          <div className="container px-4 md:px-6 max-w-7xl mx-auto relative">
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
