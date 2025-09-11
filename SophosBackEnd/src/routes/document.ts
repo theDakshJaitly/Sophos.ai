@@ -16,15 +16,24 @@ router.post('/upload', upload.single('file'), async (req, res): Promise<void> =>
   }
 
   try {
+    console.log(`Processing file: ${req.file.originalname}`);
+
+    // --- UNCOMMENT THIS LINE ---
     const concepts = await processPdf(req.file.buffer);
-    res.status(200).send({
+    
+    console.log('Successfully generated concepts from Gemini.');
+
+    // --- UPDATE THE RESPONSE TO INCLUDE THE DATA ---
+    res.status(200).json({
       message: 'File processed successfully!',
-      data: concepts,
+      data: concepts // This line sends the nodes and edges to the frontend
     });
+
   } catch (error) {
-    console.error('Error processing PDF:', error);
-    res.status(500).send({ message: 'Error processing PDF.' });
+    console.error('Error in /upload route:', error);
+    res.status(500).json({ message: 'An error occurred while processing the file.' });
   }
 });
+
 
 export { router as documentRoutes };

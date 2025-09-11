@@ -1,8 +1,10 @@
 // src/index.ts
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
+
 import mongoose from 'mongoose';
 import { projectRoutes } from './routes/projects';
 import { documentRoutes } from './routes/document';
@@ -11,7 +13,7 @@ import { authMiddleware } from './middleware/auth';
 import { devRoutes } from './routes/dev';
 import { hasSupabaseConfig } from './lib/supabase';
 
-dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from '@/utils/api';
 import { Button } from "@/components/ui/button";
 import { Folder, Settings, User, Plus, FolderTree, CornerDownRight } from "lucide-react";
 import { Space_Grotesk } from "next/font/google";
@@ -50,8 +50,8 @@ function UploadButton({ setWorkflowData }: { setWorkflowData: SidebarProps["setW
 
     try {
       setWorkflowData(null);
-      const response = await axios.post("http://localhost:3001/api/documents/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await api.post('/documents/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       setWorkflowData(response.data.data);
     } catch (error) {
