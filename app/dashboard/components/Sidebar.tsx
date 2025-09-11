@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Folder, Settings, User, Plus, FolderTree, CornerDownRight } from "lucide-react"
 import { Space_Grotesk } from 'next/font/google'
+import { useEffect, useMemo, useState } from "react"
+import { projectApi } from "@/utils/api"
 
 const spaceGrotesk = Space_Grotesk({ 
   subsets: ['latin'],
@@ -36,33 +38,47 @@ export function Sidebar() {
 }
 
 function ProjectList() {
-  const projects = [
-    { id: 1, name: "ML", group: "Work" },
-    { id: 2, name: "Linear Reg", group: "Personal" },
-    { id: 3, name: "Linear Algebra", group: "Work" },
-    { id: 4, name: "Statistics", group: "Study" },
-  ]
+  const [projects, setProjects] = useState<Array<{ _id: string; name: string; group: string }>>([])
+  const [loading, setLoading] = useState<boolean>(true)
 
-  // Group projects by their group property
-  const groupedProjects = projects.reduce((acc, project) => {
-    if (!acc[project.group]) {
-      acc[project.group] = [];
+  useEffect(() => {
+    let mounted = true
+    projectApi.getProjects()
+      .then(({ data }) => { if (mounted) setProjects(data) })
+      .catch(() => { if (mounted) setProjects([]) })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
+  }, [])
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, Array<{ _id: string; name: string; group: string }>>()
+    for (const p of projects) {
+      const arr = map.get(p.group) || []
+      arr.push(p)
+      map.set(p.group, arr)
     }
-    acc[project.group].push(project);
-    return acc;
-  }, {} as Record<string, typeof projects>);
+    return Array.from(map.entries())
+  }, [projects])
+
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading projects…</div>
+  }
+
+  if (grouped.length === 0) {
+    return <div className="text-sm text-gray-500">No projects yet.</div>
+  }
 
   return (
     <div className="space-y-4">
-      {Object.entries(groupedProjects).map(([group, projects]) => (
+      {grouped.map(([group, items]) => (
         <div key={group}>
           <div className="flex items-center gap-2 mb-2 text-gray-600">
             <Folder className="h-4 w-4" />
             <span className="text-sm font-medium">{group}</span>
           </div>
           <div className="space-y-1 pl-4">
-            {projects.map((project) => (
-              <div key={project.id} className="flex items-center p-2 hover:bg-gray-100 rounded">
+            {items.map((project) => (
+              <div key={project._id} className="flex items-center p-2 hover:bg-gray-100 rounded">
                 <CornerDownRight className="mr-2 h-4 w-4" />
                 <span>{project.name}</span>
               </div>

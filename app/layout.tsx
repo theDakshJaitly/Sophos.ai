@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import type React from "react" // Added import for React
 import { GeistSans } from 'geist/font' 
+import Script from 'next/script'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -19,7 +20,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Script id="dev-auth-token" strategy="beforeInteractive">
+{`
+try {
+  if (typeof window !== 'undefined') {
+    const existing = localStorage.getItem('token');
+    if (!existing) {
+      fetch('http://localhost:3001/api/dev/login')
+        .then(r => r.json())
+        .then(({ token }) => {
+          if (token) localStorage.setItem('token', token);
+        })
+        .catch(() => {});
+    }
+  }
+} catch {}
+`}
+        </Script>
+        {children}
+      </body>
     </html>
   )
 }

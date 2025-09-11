@@ -42,4 +42,9 @@ export const chatApi = {
     api.post('/chat/message', { projectId, message }),
 };
 
+export const devApi = {
+  // Get a dev token for local development
+  getToken: () => api.get('/dev/login'),
+};
+
 export default api;
