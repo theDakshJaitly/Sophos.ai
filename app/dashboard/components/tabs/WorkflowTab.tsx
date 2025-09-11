@@ -1,4 +1,6 @@
-import React, { useCallback } from 'react';
+'use client';
+
+import { useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -6,48 +8,46 @@ import {
   Background,
   useNodesState,
   useEdgesState,
-  addEdge,
-  Connection,
   BackgroundVariant,
+  Node,
+  Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Target } from 'lucide-react';
 
-const initialNodes = [
-  { id: '1', position: { x: 350, y: 0 }, data: { label: 'Linear Algebra' } },
-  { id: '2', position: { x: 100, y: 200 }, data: { label: 'Linear Regression' } },
-  { id: '3', position: { x: 350, y: 100 }, data: { label: 'Machine Learning' } },
-  { id: '4', position: { x: 170, y: 350 }, data: { label: 'Random Forest' } },
-  { id: '5', position: { x: 600, y: 50 }, data: { label: 'Statistics' } },
-  { id: '6', position: { x: 600, y: 200 }, data: { label: 'AI Ethics' } },
-];
+interface WorkflowTabProps {
+  data: { nodes: Array<{ id: string; label: string }>; edges: Array<any> } | null;
+}
 
-const initialEdges = [
-    { id: 'e1-3', source: '1', target: '3',  }, 
-    { id: 'e3-2', source : '3', target: '2' },
-    { id: 'e2-4', source : '2', target: '4' },
-    { id: 'e3-6', source : '3', target: '6' },
-    { id: 'e1-5', source : '1', target: '5' }
-];
+export function WorkflowTab({ data }: { data: { nodes: Array<{ id: string; label: string }>; edges: any[] } | null }) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-export function WorkflowTab() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  useEffect(() => {
+    if (data) {
+      const layoutedNodes: Node[] = data.nodes.map((n, i) => ({
+        id: n.id,
+        data: { label: n.label },
+        position: { x: (i % 5) * 250, y: Math.floor(i / 5) * 120 },
+      }));
+      setNodes(layoutedNodes);
+      setEdges((data.edges || []) as Edge[]);
+    } else {
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [data, setNodes, setEdges]);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
-  );
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-500">
+        Upload a PDF document to generate a concept map.
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-      >
+      <ReactFlow nodes={nodes} edges={edges} fitView>
         <Controls />
         <MiniMap />
         <Background variant={BackgroundVariant.Dots} gap={10} size={1} />

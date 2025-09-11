@@ -1,15 +1,17 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChatTab } from "./tabs/ChatTab"
-import { WorkflowTab } from "./tabs/WorkflowTab"
-import { NotesTab } from "./tabs/NotesTab"
-import { QuizTab } from "./tabs/QuizTab"
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChatTab } from "./tabs/ChatTab";
+import { WorkflowTab } from "./tabs/WorkflowTab";
+import { NotesTab } from "./tabs/NotesTab";
+import { QuizTab } from "./tabs/QuizTab";
 
 interface MainContentProps {
-  activeTab: string
-  setActiveTab: (tab: string) => void
+  workflowData: { nodes: any[]; edges: any[] } | null;
 }
 
-export function MainContent({ activeTab, setActiveTab }: MainContentProps) {
+export function MainContent({ workflowData }: MainContentProps) {
+  const [activeTab, setActiveTab] = useState("workflow");
+
   return (
     <div className="flex-grow p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
@@ -23,7 +25,7 @@ export function MainContent({ activeTab, setActiveTab }: MainContentProps) {
           <ChatTab />
         </TabsContent>
         <TabsContent value="workflow" className="h-full">
-          <WorkflowTab />
+          <WorkflowTab data={workflowData} />
         </TabsContent>
         <TabsContent value="notes" className="h-full">
           <NotesTab />
@@ -33,6 +35,6 @@ export function MainContent({ activeTab, setActiveTab }: MainContentProps) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
 
