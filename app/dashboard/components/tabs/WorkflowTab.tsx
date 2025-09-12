@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { WorkflowData } from '../../page';
-import { getLayoutedElements } from '@/lib/layout'; // 👈 Import our new layout helper
+import { getLayoutedElements } from '@/lib/layout'; 
 
 interface WorkflowTabProps {
   data: WorkflowData | null;

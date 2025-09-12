@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import api from '@/utils/api';
 import { Button } from "@/components/ui/button";
 import { Folder, Settings, User, Plus, FolderTree, CornerDownRight } from "lucide-react";
-import { Space_Grotesk } from "next/font/google";
+import { Comfortaa } from "next/font/google";
 import { projectApi } from "@/utils/api";
 
 interface SidebarProps {
@@ -14,7 +14,7 @@ interface SidebarProps {
 export function Sidebar({ setWorkflowData }: SidebarProps) {
   return (
     <div className="w-64 bg-white p-4 flex flex-col h-full">
-      <h2 className={`text-3xl font-bold mb-4 ${spaceGrotesk.className}`}>Sophos.ai</h2>
+      <h2 className={`text-3xl font-bold mb-4 ${comfortaa.className}`}>Sophos.ai</h2>
       <div className="flex items-center gap-2 mb-6 text-gray-700">
         <FolderTree className="h-6 w-6" />
         <span className="text-lg font-semibold">Projects</span>
@@ -119,7 +119,7 @@ function ProjectList() {
   );
 }
 
-const spaceGrotesk = Space_Grotesk({
+const comfortaa = Comfortaa({
   subsets: ["latin"],
   weight: ["700"],
 });
