@@ -27,7 +27,7 @@ app.use(morgan('dev'));
 app.use('/api/dev', devRoutes);
 app.use('/api/projects', authMiddleware, projectRoutes);
 app.use('/api/documents', authMiddleware, documentRoutes);
-app.use('/api/chat', authMiddleware, chatRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Database connection (skip when Supabase is configured)
 if (!hasSupabaseConfig()) {

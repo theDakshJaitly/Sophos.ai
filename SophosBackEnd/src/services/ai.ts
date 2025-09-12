@@ -63,35 +63,36 @@ const EMBEDDING_MODEL_API = 'https://api-inference.huggingface.co/models/sentenc
 
 export async function createEmbedding(text: string): Promise<number[]> {
   try {
-    const cleanedText = text.replace(/\n/g, ' ').substring(0, 512);
+    const cleanedText = text.replace(/\n/g, ' ');
 
-    // The API is contradicting itself. Let's follow the most direct error: "Body needs to provide a inputs key"
-    // We will send the text as a single string, not an array.
-    const payload = {
-      inputs: cleanedText 
-    };
-
-    const config = {
-      headers: {
-        'Authorization': `Bearer ${process.env.HUGGINGFACE_TOKEN}`
+    const response = await axios.post(
+      'https://api.jina.ai/v1/embeddings',
+      {
+        input: [cleanedText], // Jina API uses the "input" key
+        model: 'jina-embeddings-v2-base-en',
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.JINA_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
       }
-    };
+    );
 
-    const response = await axios.post<number[][]>(EMBEDDING_MODEL_API, payload, config);
-
-    if (response.data && response.data.length > 0) {
-      // The response for a single string input is an array containing one embedding array.
-      return response.data[0];
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      return response.data.data[0].embedding;
     }
+
     return [];
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
-        console.error('Error creating Hugging Face embedding:', error.response?.data);
+        console.error('Error creating Jina AI embedding:', error.response?.data);
     } else {
-        console.error('An unknown error occurred during embedding:', error);
+        console.error('An unknown error occurred during Jina AI embedding:', error);
     }
-    return [];
+    // IMPORTANT: Re-throw the error to stop the process if embedding fails
+    throw new Error('Failed to create text embedding.');
   }
 }
 
@@ -99,7 +100,7 @@ export async function generateChatResponse(prompt: string): Promise<string> {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama3-8b-8192', // This is a great, fast model for chat
+      model: 'llama-3.1-8b-instant', // This is a great, fast model for chat
     });
 
     const response = chatCompletion.choices[0]?.message?.content;
