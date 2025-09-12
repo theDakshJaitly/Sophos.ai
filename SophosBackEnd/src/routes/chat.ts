@@ -1,90 +1,54 @@
-import express from 'express';
-import { Chat } from '../models/Chat';
-import { UserJwtPayload } from '../types/jwt';
-import { getSupabaseClients, hasSupabaseConfig } from '../lib/supabase';
+// In SophosBackEnd/src/routes/chat.ts
 
-const router = express.Router();
+import { Router } from 'express';
+import { createEmbedding, extractConcepts, generateChatResponse } from '../services/ai'; // We'll need a chat version of this
+import { searchVectorStore } from '../services/vector';
+import { vectorStore } from '../services/pdfProcessor'; // 👈 Important: need to export this
 
-// Temporary placeholder for AI response
-const generateAIResponse = async (message: string): Promise<string> => {
-  return `Echo: ${message}`;
-};
+const router = Router();
 
-router.post('/message', async (req, res): Promise<void> => {
+router.post('/', async (req, res) => {
+  const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
   try {
-    if (!req.user) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
+    // 1. Create an embedding for the user's question
+    const queryEmbedding = await createEmbedding(message);
 
-    const { projectId, message } = req.body;
+    // 2. Search the vector store for the top 3 most relevant text chunks
+    const contextChunks = searchVectorStore(vectorStore, queryEmbedding, 3);
+    const context = contextChunks.map(c => c.text).join('\n\n---\n\n');
 
-    if (hasSupabaseConfig()) {
-      const { service } = getSupabaseClients();
-      // Ensure chat exists for (user_id, project_id)
-      const { data: existing, error: findErr } = await (service as any)
-        .from('chats')
-        .select('id')
-        .eq('user_id', (req.user as UserJwtPayload).id)
-        .eq('project_id', projectId)
-        .maybeSingle();
-      if (findErr) {
-        res.status(500).json({ error: 'Failed to fetch chat' });
-        return;
-      }
-      let chatId = existing?.id;
-      if (!chatId) {
-        const { data: created, error: createErr } = await (service as any)
-          .from('chats')
-          .insert({ user_id: (req.user as UserJwtPayload).id, project_id: projectId })
-          .select('id')
-          .single();
-        if (createErr) {
-          res.status(500).json({ error: 'Failed to create chat' });
-          return;
-        }
-        chatId = created.id;
-      }
+    // 3. Construct a new prompt for the LLM
+    const prompt = `
+      You are an intelligent assistant for the Sophos.ai platform.
+      Answer the user's question based ONLY on the following context provided from their documents.
+      If the answer is not available in the context, say "I could not find an answer in the provided documents."
 
-      const { error: insertUserErr } = await (service as any)
-        .from('messages')
-        .insert({ chat_id: chatId, sender: 'user', content: message });
-      if (insertUserErr) {
-        res.status(500).json({ error: 'Failed to save user message' });
-        return;
-      }
+      CONTEXT:
+      ---
+      ${context}
+      ---
 
-      const aiResponse = await generateAIResponse(message);
-      const { error: insertAiErr } = await (service as any)
-        .from('messages')
-        .insert({ chat_id: chatId, sender: 'ai', content: aiResponse });
-      if (insertAiErr) {
-        res.status(500).json({ error: 'Failed to save ai message' });
-        return;
-      }
+      USER'S QUESTION:
+      ${message}
 
-      res.json([
-        { sender: 'user', message },
-        { sender: 'ai', message: aiResponse }
-      ]);
-      return;
-    }
+      ANSWER:
+    `;
+    
+    // 4. Generate the final answer using the LLM
+    const answer = await generateChatResponse(prompt);
 
-    let chat = await Chat.findOne({ 
-      userId: (req.user as UserJwtPayload).id, 
-      projectId 
-    });
-    if (!chat) {
-      chat = new Chat({ userId: (req.user as UserJwtPayload).id, projectId, messages: [] });
-    }
-    chat.messages.push({ sender: 'user', message });
-    const aiResponse = await generateAIResponse(message);
-    chat.messages.push({ sender: 'ai', message: aiResponse });
-    await chat.save();
-    res.json(chat.messages.slice(-2));
+    // 5. Send the answer back to the frontend
+    res.status(200).json({ answer });
+
   } catch (error) {
-    res.status(500).json({ error: 'Failed to process message' });
+    console.error('Error in chat route:', error);
+    res.status(500).json({ error: 'Failed to process chat message.' });
   }
 });
 
-export const chatRoutes = router;
+export { router as chatRoutes };

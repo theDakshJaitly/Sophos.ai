@@ -1,9 +1,17 @@
 // In SophosBackEnd/src/services/pdfProcessor.ts
 
 import pdf from 'pdf-parse';
-import { extractConcepts } from './ai';
+import { extractConcepts, createEmbedding } from './ai';
 import { getFromCache, storeInCache } from './cache'; // Import our cache functions
 import * as crypto from 'crypto'; // Import crypto for hashing
+
+export let vectorStore: { text: string; embedding: number[] }[] = [];
+
+// Helper function to clear the store (e.g., when a new PDF is uploaded)
+export function clearVectorStore() {
+  console.log('Clearing vector store...');
+  vectorStore = [];
+}
 
 export async function processPdf(fileBuffer: Buffer) {
   try {
@@ -14,8 +22,11 @@ export async function processPdf(fileBuffer: Buffer) {
     // 1. Check the cache first
     const cachedResult = getFromCache(cacheKey);
     if (cachedResult) {
+      vectorStore = cachedResult.ragData || [];
       return cachedResult;
     }
+
+    clearVectorStore();
 
     // 2. If not in cache, proceed with processing
     const data = await pdf(fileBuffer);
@@ -26,12 +37,34 @@ export async function processPdf(fileBuffer: Buffer) {
       throw new Error('Could not extract text from the PDF.');
     }
 
-    const concepts = await extractConcepts(textChunk);
+    // --- NEW RAG PIPELINE ---
+    // 1. Chunk the text into paragraphs. We filter out very short chunks.
+    const chunks = text.split(/\n\s*\n/).filter(chunk => chunk.trim().length > 50);
+    console.log(`Created ${chunks.length} text chunks for RAG.`);
 
-    // 3. Store the new result in the cache before returning
-    storeInCache(cacheKey, concepts);
+    // 2. Create an embedding for each chunk in parallel.
+    const embeddings = await Promise.all(
+      chunks.map(chunk => createEmbedding(chunk))
+    );
+    console.log('Successfully created embeddings for all chunks.');
+
+    // 3. Combine chunks with their embeddings and store them.
+    const ragData = chunks.map((chunk, i) => ({
+      text: chunk,
+      embedding: embeddings[i],
+    }));
+    vectorStore = ragData;
+    // --- END RAG PIPELINE ---
+
+    const textChunkForMap = text.substring(0, 15000);
+    const concepts = await extractConcepts(textChunkForMap);
+
+    // Store both the concepts and the RAG data in the cache
+    const resultToCache = { concepts, ragData };
+    storeInCache(cacheKey, resultToCache);
 
     return concepts;
+    
 
   } catch (error) {
     console.error('Error in PDF processing pipeline:', error);
