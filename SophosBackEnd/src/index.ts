@@ -20,7 +20,12 @@ import rateLimit from 'express-rate-limit';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+const corsOptions = {
+  // This uses the environment variable we will set on Render.
+  // It tells the server "Only allow requests from the URL specified in the CORS_ORIGIN variable."
+  origin: process.env.CORS_ORIGIN,
+};
+app.use(cors(corsOptions));
 
 // Middleware
 app.use(cors());
