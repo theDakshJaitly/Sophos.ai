@@ -12,6 +12,8 @@ import { chatRoutes } from './routes/chat';
 import { authMiddleware } from './middleware/auth';
 import { devRoutes } from './routes/dev';
 import { hasSupabaseConfig } from './lib/supabase';
+import { MulterError } from 'multer';
+import rateLimit from 'express-rate-limit';
 
 
 
@@ -29,6 +31,16 @@ app.use('/api/projects', authMiddleware, projectRoutes);
 app.use('/api/documents', authMiddleware, documentRoutes);
 app.use('/api/chat', chatRoutes);
 
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // Limit each IP to 100 requests per window
+	standardHeaders: true,
+	legacyHeaders: false,
+    message: { message: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+
+app.use(limiter);
+
 // Database connection (skip when Supabase is configured)
 if (!hasSupabaseConfig()) {
   mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/ai-doc-assistant')
@@ -38,7 +50,21 @@ if (!hasSupabaseConfig()) {
   console.log('Supabase configured: skipping MongoDB connection');
 }
 
-// Start server
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File is too large. Please upload a PDF under 10MB.' });
+    }
+  }
+  // For other errors, you might have a more generic handler
+  console.error(err);
+  res.status(500).send('Something broke!');
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+

@@ -7,7 +7,12 @@ import { Router } from 'express';
 import { processPdf } from '../services/pdfProcessor'; // We'll create this next
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 1024 * 1024 * 10 // 10MB
+  }
+});
 
 router.post('/upload', upload.single('file'), async (req, res): Promise<void> => {
   if (!req.file) {

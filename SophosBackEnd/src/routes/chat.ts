@@ -14,6 +14,10 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Message is required' });
   }
 
+  if (message.length > 2000) { // Limit to 2000 characters
+    return res.status(400).json({ error: 'Message is too long. Please keep it under 2000 characters.' });
+  }
+
   try {
     // 1. Create an embedding for the user's question
     const queryEmbedding = await createEmbedding(message);

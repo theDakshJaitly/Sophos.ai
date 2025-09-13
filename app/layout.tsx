@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import type React from "react" // Added import for React
 import { GeistSans } from 'geist/font' 
 import Script from 'next/script'
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,6 +23,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Script id="dev-auth-token" strategy="beforeInteractive">
+        {children}
+        <Toaster /> 
 {`
 try {
   if (typeof window !== 'undefined') {

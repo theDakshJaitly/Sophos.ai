@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import axios from 'axios';
 import api from '@/utils/api';
 import { Button } from "@/components/ui/button";
-import { Folder, Settings, User, Plus, FolderTree, CornerDownRight } from "lucide-react";
+import { Folder, Settings, User, Plus, FolderTree, CornerDownRight, Loader2 } from "lucide-react";
 import { Comfortaa } from "next/font/google";
 import { projectApi } from "@/utils/api";
 import { UploadedFile } from "../page";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface SidebarProps {
@@ -72,6 +74,9 @@ function UploadButton({ setWorkflowData, setIsLoading, setRecentUploads, recentU
   setRecentUploads: SidebarProps["setRecentUploads"];
   recentUploads: SidebarProps["recentUploads"];
 }) {
+  const { toast } = useToast();
+  const [isLoading, setIsLoadingState] = useState(false);
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -80,7 +85,7 @@ function UploadButton({ setWorkflowData, setIsLoading, setRecentUploads, recentU
     formData.append("file", file);
 
     try {
-      setIsLoading(true);
+      setIsLoadingState(true);
       setWorkflowData(null);
       const response = await api.post('/documents/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -90,21 +95,61 @@ function UploadButton({ setWorkflowData, setIsLoading, setRecentUploads, recentU
         { id: new Date().toISOString(), name: file.name },
         ...prev
       ].slice(0, 5)); // Keep only the latest 5
+
+      toast({
+        title: "Success!",
+        description: `"${file.name}" uploaded and processed.`,
+      });
+
+      
     } catch (error) {
-      console.error("Error uploading file:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Error uploading file:', error.response.data.message);
+        // Here you would use a toast notification to show the user
+        // alert(error.response.data.message); 
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: error.response.data.message || "An unknown error occurred.",
+        });
+      } else {
+        console.error('An unexpected error occurred:', error);
+        // alert('An unexpected error occurred. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
     } finally {
-      setIsLoading(false);
+      setIsLoadingState(false);
     }
   };
 
   return (
     <div>
       <label htmlFor="file-upload" className="w-full">
-        <Button asChild className="w-full cursor-pointer">
-          <span>Upload Document</span>
+        <Button asChild className="w-full cursor-pointer" disabled={isLoading}>
+          <span>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Upload Document"
+            )}
+          </span>
         </Button>
       </label>
-      <input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept=".pdf" />
+      <input 
+        id="file-upload" 
+        type="file" 
+        className="hidden" 
+        onChange={handleFileChange} 
+        accept=".pdf" 
+        disabled={isLoading}
+      />
       <div className="mt-4">
         <h3 className="text-sm font-medium text-gray-600 mb-3">Recent Uploads</h3>
         <div className="space-y-2 max-h-32 overflow-y-auto">
