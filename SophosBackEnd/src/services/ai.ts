@@ -1,19 +1,23 @@
 // In SophosBackEnd/src/services/ai.ts
 
 import Groq from 'groq-sdk';
-import OpenAI from 'openai';
-import axios from 'axios';
+// 👇 Add the Google AI import back
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize the Groq client
+// Groq client for chat and concept mapping
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
+  apiKey: process.env.GROQ_API_KEY,
 });
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-// Concept Extraction with Groq and Llama
+// 👇 Initialize the Google Gemini client specifically for embeddings
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+
+// This function uses Groq for the mind map - NO CHANGES NEEDED
 export async function extractConcepts(text: string) {
+  // ... your existing code for this function is perfect.
   const prompt = `
-  Analyze the following academic text to extract key topics and their relationships.
+    Analyze the following academic text to extract key topics and their relationships.
     Respond with ONLY a valid JSON object with "nodes" and "edges" keys. Do not include any other text.
     
     RULES FOR NODES:
@@ -24,7 +28,7 @@ export async function extractConcepts(text: string) {
     RULES FOR EDGES:
     - "edges" is an array of objects.
     - Each edge object must have a "source", "target", and "label".
-    - CRITICAL: The "source" and "target" values MUST EXACTLY MATCH one of the simple numeric string "id"s from the "nodes" array (e.g., "1", "2").
+    - CRITICAL RULE: The "source" and "target" values in each edge MUST EXACTLY MATCH one of the simple numeric string "id"s from the "nodes" array you just generated. Do not use the node's label or a shortened version for the "source" or "target".
 
     EXAMPLE:
     {
@@ -41,68 +45,28 @@ export async function extractConcepts(text: string) {
     ---
     ${text}
     ---
-`;
-
+  `;
   const chatCompletion = await groq.chat.completions.create({
     messages: [{ role: 'user', content: prompt }],
-    model: 'llama-3.1-8b-instant', // A great, fast model for this task
+    model: 'llama-3.1-8b-instant', // Your working model
     temperature: 0.2,
-    response_format: { type: 'json_object' } // Enforce JSON output
+    response_format: { type: 'json_object' }
   });
-
   const jsonResponse = chatCompletion.choices[0]?.message?.content;
   if (!jsonResponse) {
-    throw new Error('Groq API returned an empty response.');
+    throw new Error('Groq API returned an empty response for concepts.');
   }
-
   return JSON.parse(jsonResponse);
 }
 
-const EMBEDDING_MODEL_API = 'https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2';
-
-
-export async function createEmbedding(text: string): Promise<number[]> {
-  try {
-    const cleanedText = text.replace(/\n/g, ' ');
-
-    const response = await axios.post(
-      'https://api.jina.ai/v1/embeddings',
-      {
-        input: [cleanedText], // Jina API uses the "input" key
-        model: 'jina-embeddings-v2-base-en',
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.JINA_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (response.data && response.data.data && response.data.data.length > 0) {
-      return response.data.data[0].embedding;
-    }
-
-    return [];
-
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-        console.error('Error creating Jina AI embedding:', error.response?.data);
-    } else {
-        console.error('An unknown error occurred during Jina AI embedding:', error);
-    }
-    // IMPORTANT: Re-throw the error to stop the process if embedding fails
-    throw new Error('Failed to create text embedding.');
-  }
-}
-
+// This function uses Groq for the chat - NO CHANGES NEEDED
 export async function generateChatResponse(prompt: string): Promise<string> {
+  // ... your existing code for this function is perfect.
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama-3.1-8b-instant', // This is a great, fast model for chat
+      model: 'llama-3.1-8b-instant', // Your working model
     });
-
     const response = chatCompletion.choices[0]?.message?.content;
     if (!response) {
       return "I'm sorry, I couldn't generate a response based on the provided documents.";
@@ -111,5 +75,18 @@ export async function generateChatResponse(prompt: string): Promise<string> {
   } catch (error) {
     console.error('Error getting chat completion from Groq:', error);
     throw new Error('Failed to generate chat response.');
+  }
+}
+
+// 👇 REPLACED: This function now uses the reliable Google embedding model
+export async function createEmbedding(text: string): Promise<number[]> {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    const result = await model.embedContent(text);
+    return result.embedding.values;
+  } catch (error) {
+    console.error('Error creating Google Gemini embedding:', error);
+    // Throw an error to stop the batch processing if one fails
+    throw new Error('Failed to create text embedding via Google.');
   }
 }
