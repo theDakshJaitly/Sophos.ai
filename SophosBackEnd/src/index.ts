@@ -1,76 +1,65 @@
 // src/index.ts
+// In SophosBackEnd/src/index.ts
+
 import dotenv from 'dotenv';
 dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import morgan from 'morgan';
-
-import mongoose from 'mongoose';
-import { projectRoutes } from './routes/projects';
+import { MulterError } from 'multer';
 import { documentRoutes } from './routes/document';
 import { chatRoutes } from './routes/chat';
-import { authMiddleware } from './middleware/auth';
-import { devRoutes } from './routes/dev';
-import { hasSupabaseConfig } from './lib/supabase';
-import { MulterError } from 'multer';
-import rateLimit from 'express-rate-limit';
-
-
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const port = process.env.PORT || 3001;
 
-const corsOptions = {
-  // This uses the environment variable we will set on Render.
-  // It tells the server "Only allow requests from the URL specified in the CORS_ORIGIN variable."
-  origin: process.env.CORS_ORIGIN,
-};
-app.use(cors(corsOptions));
+// --- NEW ROBUST CORS CONFIGURATION ---
+const whitelist = [
+    'https://sophos-ai-seven.vercel.app', // Your Vercel production URL
+    'http://localhost:3000' // Your local development URL
+];
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
-
-// Routes
-app.use('/api/dev', devRoutes);
-app.use('/api/projects', authMiddleware, projectRoutes);
-app.use('/api/documents', authMiddleware, documentRoutes);
-app.use('/api/chat', chatRoutes);
-
-const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // Limit each IP to 100 requests per window
-	standardHeaders: true,
-	legacyHeaders: false,
-    message: { message: 'Too many requests from this IP, please try again after 15 minutes.' }
-});
-
-app.use(limiter);
-
-// Database connection (skip when Supabase is configured)
-if (!hasSupabaseConfig()) {
-  mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/ai-doc-assistant')
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
-} else {
-  console.log('Supabase configured: skipping MongoDB connection');
-}
-
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err instanceof MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File is too large. Please upload a PDF under 10MB.' });
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // 'origin' will be undefined for server-to-server requests or tools like Postman
+    // We allow requests that have an origin found in our whitelist, or requests with no origin.
+    if (origin && whitelist.indexOf(origin) === -1) {
+      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+      console.error(msg);
+      callback(new Error(msg));
+    } else {
+      callback(null, true);
     }
   }
-  // For other errors, you might have a more generic handler
-  console.error(err);
-  res.status(500).send('Something broke!');
+};
+
+app.use(cors(corsOptions));
+// --- END NEW CORS CONFIGURATION ---
+
+
+app.use(express.json());
+
+// --- ROUTES ---
+app.use('/api/documents', documentRoutes);
+app.use('/api/chat', chatRoutes);
+
+
+// --- CUSTOM ERROR HANDLER (as before) ---
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: 'File is too large. Please upload a PDF under 10MB.' });
+        }
+    } else if (err.message === 'Not allowed by CORS') {
+        return res.status(403).json({ message: 'Access denied by CORS policy.' });
+    }
+    
+    console.error(err);
+    res.status(500).json({ message: 'An internal server error occurred.' });
 });
 
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 
 
