@@ -1,5 +1,4 @@
 // In app/dashboard/components/Sidebar.tsx
-// In app/dashboard/components/Sidebar.tsx
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -45,7 +44,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       toast({
         title: "Success!",
-        description: `"${file.name}" was processed.`,
+        description: `"${file.name}" was processed successfully.`,
       });
 
     } catch (error) {
