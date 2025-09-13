@@ -38,7 +38,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, setRecentUploads, recen
           <span className="text-lg font-semibold">Projects</span>
         </div>
         <div className="flex-grow overflow-auto bg-white rounded-lg border border-gray-100 p-3 min-h-[200px]">
-          <ProjectList />
+          
         </div>
       </div>
 
@@ -174,7 +174,7 @@ function UploadButton({ setWorkflowData, setIsLoading, setRecentUploads, recentU
   );
 }
 
-function ProjectList() {
+/*function ProjectList() {
   const [projects, setProjects] = useState<Array<{ _id?: string; id?: string; name: string; group: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -222,7 +222,7 @@ function ProjectList() {
     </div>
     
   );
-}
+} */
 
 const comfortaa = Comfortaa({
   subsets: ["latin"],
