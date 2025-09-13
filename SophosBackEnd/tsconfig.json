@@ -1,6 +1,15 @@
 {
   "compilerOptions": {
 
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
     "typeRoots": ["./src/types", "./node_modules/@types"],
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
@@ -109,5 +118,6 @@
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
-  }
+  },
+  "include": ["src/**/*"]
 }
