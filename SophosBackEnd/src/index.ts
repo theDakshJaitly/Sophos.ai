@@ -20,6 +20,8 @@ import rateLimit from 'express-rate-limit';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+
 // Middleware
 app.use(cors());
 app.use(express.json());

@@ -87,7 +87,7 @@ function UploadButton({ setWorkflowData, setIsLoading, setRecentUploads, recentU
     try {
       setIsLoadingState(true);
       setWorkflowData(null);
-      const response = await api.post('/documents/upload', formData, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setWorkflowData(response.data.data);
