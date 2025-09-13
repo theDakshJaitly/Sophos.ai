@@ -13,38 +13,46 @@ import {
   Edge as FlowEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { WorkflowData } from '../../page';
 import { getLayoutedElements } from '@/lib/layout'; 
 
 interface WorkflowTabProps {
-  data: WorkflowData | null;
+  data: { nodes: any[]; edges: any[] } | null;
 }
 
-type InputNode = { id: string; label: string; position?: { x: number; y: number } };
-type InputEdge = { id?: string; source: string; target: string; label?: string };
-
-export function WorkflowTab({ data }: { data: { nodes: InputNode[]; edges: InputEdge[] } | null }) {
+export function WorkflowTab({ data }: WorkflowTabProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
 
   useEffect(() => {
     if (data && data.nodes?.length) {
-      const seedNodes: FlowNode[] = data.nodes.map((n, i) => ({
+      console.log('Raw data received:', data); // Debug log
+      
+      // Convert backend data to React Flow format
+      const seedNodes: FlowNode[] = data.nodes.map((n) => ({
         id: n.id,
         data: { label: n.label },
-        position: n.position ?? { x: 0, y: 0 },
+        position: { x: 0, y: 0 }, // Will be overridden by layout
       }));
+      
       const seedEdges: FlowEdge[] = data.edges.map((e, i) => ({
-        id: e.id ?? `e-${e.source}-${e.target}-${i}`,
+        id: e.id || `e-${e.source}-${e.target}-${i}`,
         source: e.source,
         target: e.target,
-        label: e.label,
-      }) as FlowEdge);
+        label: e.label || '',
+      }));
+
+      console.log('Converted nodes:', seedNodes); // Debug log
+      console.log('Converted edges:', seedEdges); // Debug log
 
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(seedNodes, seedEdges);
+      
+      console.log('Layouted nodes:', layoutedNodes); // Debug log
+      console.log('Layouted edges:', layoutedEdges); // Debug log
+      
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
     } else {
+      console.log('No data or empty nodes array'); // Debug log
       setNodes([]);
       setEdges([]);
     }

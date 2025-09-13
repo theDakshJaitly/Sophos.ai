@@ -23,7 +23,7 @@ export async function processPdf(fileBuffer: Buffer) {
     const cachedResult = getFromCache(cacheKey);
     if (cachedResult) {
       vectorStore = cachedResult.ragData || [];
-      return cachedResult;
+      return cachedResult.concepts; // Fix: Return only the concepts part
     }
 
     clearVectorStore();
@@ -63,9 +63,8 @@ export async function processPdf(fileBuffer: Buffer) {
     const resultToCache = { concepts, ragData };
     storeInCache(cacheKey, resultToCache);
 
-    return concepts;
+    return concepts; // This is correct - return just the concepts
     
-
   } catch (error) {
     console.error('Error in PDF processing pipeline:', error);
     throw new Error('Failed to process PDF and extract concepts.');

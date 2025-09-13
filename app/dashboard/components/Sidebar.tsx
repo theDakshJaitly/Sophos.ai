@@ -35,7 +35,11 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
 
-      setWorkflowData(response.data);
+      console.log('Full response:', response.data); // Debug log
+      console.log('Data field:', response.data.data); // Debug log
+      
+      // Fix: Use response.data.data instead of response.data
+      setWorkflowData(response.data.data);
 
       setRecentUploads(prev => [
         { id: new Date().toISOString(), name: file.name },
