@@ -6,71 +6,60 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SendHorizonal } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { SendHorizonal, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Define the structure of a chat message
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
 export function ChatTab() {
-  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Ref for the scroll area to auto-scroll to the bottom
+  const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to the bottom whenever messages change
+  // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollContainer) {
-        scrollContainer.scrollTo({
-          top: scrollContainer.scrollHeight,
-          behavior: 'smooth',
-        });
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
     }
   }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    // Add user message to the chat
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      // Call the backend chat API
-      const response = await axios.post<{ answer: string }>('http://localhost:3001/api/chat', {
-        message: input,
-      });
+      const response = await axios.post<{ answer: string }>(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat`,
+        { message: input }
+      );
       
       const assistantMessage: Message = { role: 'assistant', content: response.data.answer };
       setMessages((prev) => [...prev, assistantMessage]);
 
     } catch (error) {
-      console.error('Error fetching chat response:', error);
-      
-      const errorMessageContent = (axios.isAxiosError(error) && error.response)
-        ? error.response.data.message || "Sorry, I ran into an error."
+      const errorMessageContent = (axios.isAxiosError(error) && error.response?.data?.message)
+        ? error.response.data.message
         : "Sorry, I ran into an error. Please try again.";
+      
+      setMessages((prev) => [...prev, { role: 'assistant', content: errorMessageContent }]);
 
-      const errorMessage: Message = { role: 'assistant', content: errorMessageContent };
-      setMessages((prev) => [...prev, errorMessage]);
-
-      // 👇 Also show a toast for the chat error
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Chat Error",
         description: errorMessageContent,
       });
     } finally {
@@ -92,10 +81,6 @@ export function ChatTab() {
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
               <Avatar className="w-8 h-8 flex-shrink-0">
-                <AvatarImage 
-                  src={msg.role === 'user' ? "/placeholder-user.jpg" : "/placeholder-logo.png"} 
-                  alt={msg.role === 'user' ? "User" : "AI"} 
-                />
                 <AvatarFallback>{msg.role === 'user' ? 'U' : 'AI'}</AvatarFallback>
               </Avatar>
               <div className={`rounded-lg p-3 max-w-[70%] break-words ${
@@ -111,10 +96,10 @@ export function ChatTab() {
           {isLoading && (
             <div className="flex items-start gap-3">
               <Avatar className="w-8 h-8 flex-shrink-0">
-                <AvatarImage src="/placeholder-logo.png" alt="AI" />
                 <AvatarFallback>AI</AvatarFallback>
               </Avatar>
-              <div className="rounded-lg p-3 bg-muted">
+              <div className="rounded-lg p-3 bg-muted flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <p className="text-sm">Thinking...</p>
               </div>
             </div>
@@ -124,24 +109,17 @@ export function ChatTab() {
       
       {/* Fixed input area */}
       <div className="flex-shrink-0 p-4 border-t bg-background">
-        <form onSubmit={handleSubmit} className="relative">
-          <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything about your documents..."
-              className="flex-grow border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-gray-400"
-              disabled={isLoading}
-            />
-            <Button 
-              type="submit" 
-              disabled={isLoading || !input.trim()}
-              size="sm"
-              className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <SendHorizonal className="h-4 w-4" />
-            </Button>
-          </div>
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask a question about your documents..."
+            className="flex-grow"
+            disabled={isLoading}
+          />
+          <Button type="submit" disabled={isLoading || !input.trim()}>
+            <SendHorizonal className="h-4 w-4" />
+          </Button>
         </form>
       </div>
     </div>

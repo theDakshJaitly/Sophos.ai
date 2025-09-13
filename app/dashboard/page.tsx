@@ -14,8 +14,20 @@ export interface UploadedFile {
 }
 
 export interface WorkflowData {
-  nodes: Node[];
-  edges: Edge[];
+  nodes: InputNode[];
+  edges: InputEdge[];
+}
+
+interface InputNode {
+  id: string;
+  label: string;
+  position: { x: number; y: number };
+}
+
+interface InputEdge {
+  id: string;
+  source: string;
+  target: string;
 }
 
 export default function DashboardPage() {

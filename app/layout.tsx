@@ -25,6 +25,7 @@ export default function RootLayout({
         <Script id="dev-auth-token" strategy="beforeInteractive">
         {children}
         <Toaster /> 
+        
 {`
 try {
   if (typeof window !== 'undefined') {

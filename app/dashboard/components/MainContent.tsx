@@ -1,18 +1,19 @@
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChatTab } from "./tabs/ChatTab";
-import { WorkflowTab } from "./tabs/WorkflowTab";
-import { NotesTab } from "./tabs/NotesTab";
-import { QuizTab } from "./tabs/QuizTab";
-import { Loader2} from "lucide-react";
+// In app/dashboard/components/MainContent.tsx
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { WorkflowTab } from "./tabs/WorkflowTab"
+import { ChatTab } from "./tabs/ChatTab"
+import { NotesTab } from "./tabs/NotesTab"
+import { QuizTab } from "./tabs/QuizTab"
+import { Loader2 } from "lucide-react"
+import { WorkflowData } from "../page"
 
 interface MainContentProps {
-  workflowData: { nodes: any[]; edges: any[] } | null;
+  workflowData: WorkflowData | null;
   isLoading: boolean;
 }
 
 export function MainContent({ workflowData, isLoading }: MainContentProps) {
-  const [activeTab, setActiveTab] = useState("workflow");
   if (isLoading) {
     return (
       <main className="flex-1 p-6 flex flex-col items-center justify-center">
@@ -28,28 +29,29 @@ export function MainContent({ workflowData, isLoading }: MainContentProps) {
   }
 
   return (
-    <div className="flex-grow p-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <TabsList>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
+    <main className="flex-1 p-6 flex flex-col min-h-0">
+      <Tabs defaultValue="workflow" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="flex-shrink-0">
           <TabsTrigger value="workflow">Workflow</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="quiz">Quiz</TabsTrigger>
         </TabsList>
-        <TabsContent value="chat" className="flex-grow">
-          <ChatTab />
-        </TabsContent>
-        <TabsContent value="workflow" className="h-full">
+
+        <TabsContent value="workflow" className="flex-1 min-h-0">
           <WorkflowTab data={workflowData} />
         </TabsContent>
-        <TabsContent value="notes" className="h-full">
+        <TabsContent value="chat" className="flex-1 min-h-0">
+          <ChatTab />
+        </TabsContent>
+        <TabsContent value="notes" className="flex-1 min-h-0">
           <NotesTab />
         </TabsContent>
-        <TabsContent value="quiz" className="h-full">
+        <TabsContent value="quiz" className="flex-1 min-h-0">
           <QuizTab />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </main>
+  )
 }
 
