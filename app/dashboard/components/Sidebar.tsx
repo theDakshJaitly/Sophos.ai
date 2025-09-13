@@ -1,4 +1,5 @@
 // In app/dashboard/components/Sidebar.tsx
+// In app/dashboard/components/Sidebar.tsx
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -6,15 +7,13 @@ import { UploadedFile } from "../page";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
-import { MainContent } from "./MainContent";
 
-// Your props interface
 interface SidebarProps {
   setWorkflowData: (data: any) => void;
   setIsLoading: (isLoading: boolean) => void;
   recentUploads: UploadedFile[];
   setRecentUploads: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
-  isLoading: boolean; // Assuming isLoading is passed down
+  isLoading: boolean;
 }
 
 export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecentUploads, isLoading }: SidebarProps) {
@@ -46,23 +45,19 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       toast({
         title: "Success!",
-        description: `"${file.name}" was processed successfully.`,
+        description: `"${file.name}" was processed.`,
       });
 
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        toast({
-          variant: "destructive",
-          title: "Upload Failed",
-          description: error.response.data.message || "An unknown error occurred.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Upload Failed",
-          description: "An unexpected network error occurred.",
-        });
-      }
+      const errMessage = (axios.isAxiosError(error) && error.response?.data?.message)
+        ? error.response.data.message
+        : "An unknown error occurred.";
+      
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: errMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -97,10 +92,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
           <Button asChild className="w-full cursor-pointer" disabled={isLoading}>
             <span>
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
               ) : (
                 "Upload Document"
               )}
