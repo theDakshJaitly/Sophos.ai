@@ -8,6 +8,11 @@ import { RightPanel } from './components/RightPanel';
 import { Node, Edge } from '@xyflow/react';
 
 // Define a type for our concept map data for type safety
+export interface UploadedFile {
+  id: string;
+  name: string;
+}
+
 export interface WorkflowData {
   nodes: Node[];
   edges: Edge[];
@@ -15,11 +20,18 @@ export interface WorkflowData {
 
 export default function DashboardPage() {
   const [workflowData, setWorkflowData] = useState<WorkflowData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [recentUploads, setRecentUploads] = useState<UploadedFile[]>([]);
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      <Sidebar setWorkflowData={setWorkflowData} />
-      <MainContent workflowData={workflowData} />
+      <Sidebar 
+      setWorkflowData={setWorkflowData}
+      setIsLoading={setIsLoading}
+      recentUploads={recentUploads}
+      setRecentUploads={setRecentUploads}
+       />
+      <MainContent workflowData={workflowData} isLoading={isLoading} />
       <RightPanel />
     </div>
   );

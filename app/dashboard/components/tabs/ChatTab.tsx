@@ -106,17 +106,24 @@ export function ChatTab() {
           )}
         </div>
       </ScrollArea>
-      <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a question about your documents..."
-          className="flex-grow"
-          disabled={isLoading}
-        />
-        <Button type="submit" disabled={isLoading}>
+      <form onSubmit={handleSubmit} className="relative">
+        <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask anything about your documents..."
+            className="flex-grow border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-gray-400"
+            disabled={isLoading}
+          />
+          <Button 
+            type="submit" 
+            disabled={isLoading || !input.trim()}
+            size="sm"
+            className="rounded-lg bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <SendHorizonal className="h-4 w-4" />
-        </Button>
+          </Button>
+        </div>
       </form>
     </div>
   );
