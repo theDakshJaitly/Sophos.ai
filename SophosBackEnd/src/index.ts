@@ -15,7 +15,7 @@ const port = process.env.PORT || 3001;
 
 // --- ROBUST CORS CONFIGURATION ---
 const whitelist = [
-    'https://sophos7.vercel.app/', // Your Vercel production URL
+    'https://sophos7.vercel.app', // Your Vercel production URL
     'http://localhost:3000' // Your local development URL
 ];
 const corsOptions: cors.CorsOptions = {
