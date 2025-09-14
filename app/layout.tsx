@@ -5,6 +5,7 @@ import type React from "react" // Added import for React
 import { GeistSans } from 'geist/font' 
 import Script from 'next/script'
 import { Toaster } from "@/components/ui/toaster"
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -25,6 +26,7 @@ export default function RootLayout({
         <Script id="dev-auth-token" strategy="beforeInteractive">
         {children}
         <Toaster /> 
+        <Analytics />
         
 {`
 try {
