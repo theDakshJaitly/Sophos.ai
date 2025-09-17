@@ -2,71 +2,65 @@
 
 import pdf from 'pdf-parse';
 import { extractConcepts, createEmbedding } from './ai';
-import { getFromCache, storeInCache } from './cache'; // Import our cache functions
-import * as crypto from 'crypto'; // Import crypto for hashing
+import { supabaseAdmin } from '../lib/supabase-admin'; // 👈 Import our new admin client
+import crypto from 'crypto';
 
-export let vectorStore: { text: string; embedding: number[] }[] = [];
+// We no longer need the in-memory vector store or cache,
+// as the database will handle persistence.
 
-// Helper function to clear the store (e.g., when a new PDF is uploaded)
-export function clearVectorStore() {
-  console.log('Clearing vector store...');
-  vectorStore = [];
-}
-
-export async function processPdf(fileBuffer: Buffer) {
+export async function processPdf(fileBuffer: Buffer, fileName: string, userId: string) {
   try {
-    // Create a unique key for this file based on its content (hash)
-    const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-    const cacheKey = `pdf-${hash}`;
-
-    // 1. Check the cache first
-    const cachedResult = getFromCache(cacheKey);
-    if (cachedResult) {
-      vectorStore = cachedResult.ragData || [];
-      return cachedResult.concepts; // Fix: Return only the concepts part
-    }
-
-    clearVectorStore();
-
-    // 2. If not in cache, proceed with processing
     const data = await pdf(fileBuffer);
     const text = data.text;
-    const textChunk = text.substring(0, 15000);
 
-    if (!textChunk) {
-      throw new Error('Could not extract text from the PDF.');
+    // --- DATABASE INSERTION LOGIC ---
+    
+    // 1. Create a new document record in the 'documents' table
+    console.log(`Creating document record for user: ${userId}`);
+    const { data: docData, error: docError } = await supabaseAdmin
+      .from('documents')
+      .insert({ file_name: fileName, user_id: userId })
+      .select('id')
+      .single();
+
+    if (docError || !docData) {
+      console.error("Error creating document record:", docError);
+      throw new Error("Could not create document record in database.");
     }
+    const documentId = docData.id;
+    console.log(`Document record created with ID: ${documentId}`);
 
-    // --- NEW RAG PIPELINE ---
-    // 1. Chunk the text into paragraphs. We filter out very short chunks.
+    // 2. Chunk the text and create embeddings
     const chunks = text.split(/\n\s*\n/).filter(chunk => chunk.trim().length > 50);
     console.log(`Created ${chunks.length} text chunks for RAG.`);
+    const embeddings = await Promise.all(chunks.map(chunk => createEmbedding(chunk)));
 
-    // 2. Create an embedding for each chunk in parallel.
-    const embeddings = await Promise.all(
-      chunks.map(chunk => createEmbedding(chunk))
-    );
-    console.log('Successfully created embeddings for all chunks.');
-
-    // 3. Combine chunks with their embeddings and store them.
-    const ragData = chunks.map((chunk, i) => ({
-      text: chunk,
+    // 3. Prepare the chunk data for batch insertion
+    const chunksToInsert = chunks.map((chunk, i) => ({
+      document_id: documentId,
+      content: chunk,
       embedding: embeddings[i],
     }));
-    vectorStore = ragData;
-    // --- END RAG PIPELINE ---
+
+    // 4. Insert all chunks into the 'document_chunks' table
+    console.log(`Inserting ${chunksToInsert.length} chunks into the database...`);
+    const { error: chunkError } = await supabaseAdmin
+      .from('document_chunks')
+      .insert(chunksToInsert);
+
+    if (chunkError) {
+      console.error("Error inserting document chunks:", chunkError);
+      throw new Error("Could not insert document chunks into database.");
+    }
+    console.log("All chunks inserted successfully.");
+    // --- END DATABASE LOGIC ---
 
     const textChunkForMap = text.substring(0, 15000);
     const concepts = await extractConcepts(textChunkForMap);
 
-    // Store both the concepts and the RAG data in the cache
-    const resultToCache = { concepts, ragData };
-    storeInCache(cacheKey, resultToCache);
-
-    return concepts; // This is correct - return just the concepts
-    
+    return concepts;
   } catch (error) {
     console.error('Error in PDF processing pipeline:', error);
-    throw new Error('Failed to process PDF and extract concepts.');
+    throw new Error('Failed to process and save PDF.');
   }
 }

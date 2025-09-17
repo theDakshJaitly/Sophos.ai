@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendHorizonal, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase-client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -42,6 +43,15 @@ export function ChatTab() {
     setIsLoading(true);
 
     try {
+
+      const { data: { session } } = await supabase.auth.getSession();
+  
+      if (!session) {
+        throw new Error("User not authenticated");
+      }
+
+
+
       const response = await axios.post<{ answer: string }>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat`,
         { message: input }

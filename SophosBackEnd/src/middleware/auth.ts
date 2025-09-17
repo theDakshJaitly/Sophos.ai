@@ -1,24 +1,45 @@
+// In SophosBackEnd/src/middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { UserJwtPayload } from '../types/jwt';
+import { supabaseAdmin } from '../lib/supabase-admin';
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization header is missing or malformed.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  console.log(`Middleware received token starting with: ${token.substring(0, 10)}...`);
+
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      res.status(401).json({ error: 'No token provided' });
-      return;
+    // We ask Supabase to validate the token and give us the user
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    // If Supabase returns an error, we log it and reject the request
+    if (error) {
+      console.error('--- SUPABASE AUTH VALIDATION ERROR ---');
+      console.error('Status:', error.status);
+      console.error('Message:', error.message);
+      console.error('------------------------------------');
+      return res.status(401).json({ message: `Authentication Failed: ${error.message}` });
+    }
+
+    // If there's no error but the user is null, it's also a failure
+    if (!user) {
+      console.error('--- SUPABASE AUTH VALIDATION ERROR ---');
+      console.error('Token was considered valid, but no user was returned.');
+      console.error('------------------------------------');
+      return res.status(401).json({ message: 'User not found for the provided token.' });
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    if (typeof decoded === 'string' || !('id' in decoded)) {
-      res.status(401).json({ error: 'Invalid token format' });
-      return;
-    }
-    
-    req.user = decoded as UserJwtPayload;
+    console.log("Token successfully validated for user:", user.id);
+    // @ts-ignore
+    req.user = user;
     next();
+
   } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
+    console.error("A critical error occurred in the auth middleware:", error);
+    res.status(500).json({ message: 'Internal server error during authentication' });
   }
 };

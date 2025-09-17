@@ -7,10 +7,16 @@ import cors from 'cors';
 import { MulterError } from 'multer';
 import { documentRoutes } from './routes/document';
 import { chatRoutes } from './routes/chat';
+import { authMiddleware } from './middleware/auth';
 // import { projectRoutes } from './routes/projects'; // 👈 We are not using this for the MVP
 // import mongoose from 'mongoose'; // 👈 We are not using mongoose for the MVP
 
 const app = express();
+app.use((req, res, next) => {
+  console.log(`-->> Incoming Request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 const port = process.env.PORT || 3001;
 
 // --- ROBUST CORS CONFIGURATION ---

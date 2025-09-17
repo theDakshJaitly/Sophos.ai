@@ -1,32 +1,43 @@
 // In SophosBackEnd/src/routes/chat.ts
 
 import { Router } from 'express';
-import { createEmbedding, extractConcepts, generateChatResponse } from '../services/ai'; // We'll need a chat version of this
-import { searchVectorStore } from '../services/vector';
-import { vectorStore } from '../services/pdfProcessor'; // 👈 Important: need to export this
+import { createEmbedding, generateChatResponse } from '../services/ai';
+import { supabaseAdmin } from '../lib/supabase-admin'; // 👈 Use the admin client
 
 const router = Router();
 
 router.post('/', async (req, res) => {
   const { message } = req.body;
+  // @ts-ignore
+  const userId = req.user?.id; // Get user ID from our auth middleware
 
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }
-
-  if (message.length > 2000) { // Limit to 2000 characters
-    return res.status(400).json({ error: 'Message is too long. Please keep it under 2000 characters.' });
+  if (!userId) {
+    return res.status(401).json({ error: 'User not authenticated' });
   }
 
   try {
     // 1. Create an embedding for the user's question
     const queryEmbedding = await createEmbedding(message);
 
-    // 2. Search the vector store for the top 3 most relevant text chunks
-    const contextChunks = searchVectorStore(vectorStore, queryEmbedding, 3);
-    const context = contextChunks.map(c => c.text).join('\n\n---\n\n');
+    // 2. Call our new Supabase database function to find relevant chunks
+    const { data: chunks, error } = await supabaseAdmin.rpc('match_document_chunks', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.7, // Adjust this threshold as needed
+      match_count: 5,
+      p_user_id: userId
+    });
 
-    // 3. Construct a new prompt for the LLM
+    if (error) {
+      console.error('Error fetching document chunks:', error);
+      throw new Error('Could not retrieve relevant document chunks.');
+    }
+
+    const context = (chunks as { content: string }[]).map((c) => c.content).join('\n\n---\n\n');
+
+    // 3. Construct the prompt for the LLM
     const prompt = `
       You are an intelligent assistant for the Sophos.ai platform.
       Answer the user's question based ONLY on the following context provided from their documents.
@@ -43,15 +54,16 @@ router.post('/', async (req, res) => {
       ANSWER:
     `;
     
-    // 4. Generate the final answer using the LLM
+    // 4. Generate the final answer
     const answer = await generateChatResponse(prompt);
 
     // 5. Send the answer back to the frontend
     res.status(200).json({ answer });
 
   } catch (error) {
-    console.error('Error in chat route:', error);
-    res.status(500).json({ error: 'Failed to process chat message.' });
+    const err = error as Error;
+    console.error('Error in chat route:', err);
+    res.status(500).json({ error: 'Failed to process chat message.', details: err.message });
   }
 });
 
