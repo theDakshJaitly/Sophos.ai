@@ -1,106 +1,76 @@
-import express from 'express';
-import multer from 'multer';
-import { UserJwtPayload } from '../types/jwt';
-import { getSupabaseClients, hasSupabaseConfig } from '../lib/supabase';
+// In SophosBackEnd/src/routes/document.ts
+
 import { Router } from 'express';
+import multer from 'multer';
 import { processPdf } from '../services/pdfProcessor';
-import { authMiddleware } from '../middleware/auth';
+import { supabaseAdmin } from '../lib/supabase-admin'; // Use the admin client
 
 const router = Router();
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 1024 * 1024 * 10 // 10MB
-  }
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-router.post('/upload', authMiddleware, upload.single('file'), async (req, res): Promise<void> => {
-  if (!req.file) {
-    res.status(400).send({ message: 'No file uploaded.' });
-    return;
-  }
-
-  // Check if Supabase is configured
-  if (!hasSupabaseConfig()) {
-    res.status(500).json({ message: 'Database not configured.' });
-    return;
-  }
-
-  const { service } = getSupabaseClients();
-  if (!service) {
-    res.status(500).json({ message: 'Database connection failed.' });
-    return;
-  }
-
+router.post('/upload', upload.single('file'), async (req, res) => {
+  // This single, robust try...catch block will handle all errors.
   try {
-    const userId = (req.user as UserJwtPayload).id;
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+
+    const userId = res.locals.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated.' });
+    }
+
     console.log(`Processing file: ${req.file.originalname} for user: ${userId}`);
 
-    // 1. Process the PDF and get concepts + chunks with embeddings
-    // Fix: Pass only the required argument to processPdf (buffer)
+    // 1. Process the PDF to get concepts and chunks.
     const { concepts, chunks } = await processPdf(req.file.buffer);
 
-    console.log('Successfully processed PDF. Concepts:', concepts);
-    console.log(`Generated ${chunks.length} chunks with embeddings`);
-
-    // 2. Insert document record into Supabase
-    const { data: document, error: docError } = await service
+    // 2. Insert the main document record into the database.
+    const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
-      .insert({
-        user_id: userId,
-        file_name: req.file.originalname
-      })
+      .insert({ user_id: userId, file_name: req.file.originalname })
       .select('id')
       .single();
 
-    if (docError) {
-      console.error('Error inserting document:', docError);
-      res.status(500).json({ message: 'Failed to save document to database.' });
-      return;
-    }
+    if (docError) throw docError;
+    console.log('Document record saved with ID:', document.id);
 
-    console.log('Document saved with ID:', document.id);
-
-    // 3. Insert document chunks with embeddings
-    const chunksToInsert = chunks.map((chunk: any) => ({
+    // 3. Insert all the processed chunks into the database.
+    const chunksToInsert = chunks.map(chunk => ({
       document_id: document.id,
       content: chunk.text,
       embedding: chunk.embedding
     }));
 
-    const { error: chunksError } = await service
+    const { error: chunksError } = await supabaseAdmin
       .from('document_chunks')
       .insert(chunksToInsert);
 
     if (chunksError) {
-      console.error('Error inserting document chunks:', chunksError);
-      
-      // Clean up: delete the document record if chunks failed
-      await service.from('documents').delete().eq('id', document.id);
-      
-      res.status(500).json({ message: 'Failed to save document chunks to database.' });
-      return;
+      // If saving chunks fails, we clean up by deleting the main document record.
+      await supabaseAdmin.from('documents').delete().eq('id', document.id);
+      throw chunksError;
     }
+    console.log(`Successfully saved ${chunksToInsert.length} chunks to database.`);
 
-    console.log(`Successfully saved ${chunksToInsert.length} chunks to database`);
-
-    // 4. Return success response with concepts for the frontend
-    res.status(200).json({
-      message: 'File processed and saved successfully!',
-      data: concepts,
-      documentId: document.id,
-      chunksCount: chunksToInsert.length
-    });
+    // 4. Return the concepts to the frontend to build the mind map.
+    res.status(200).json(concepts);
 
   } catch (error) {
-    console.error('Error in /upload route:', error);
-    
+    console.error('--- A critical error occurred in the /upload route ---');
     if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+        console.error('Error Name:', error.name);
+        console.error('Error Message:', error.message);
+        console.error('Stack Trace:', error.stack);
+        // Provide a specific message for known errors, or a generic one.
+        return res.status(500).json({ message: `An error occurred: ${error.message}` });
     }
-    
-    res.status(500).json({ message: 'An error occurred while processing the file.' });
+    // Fallback for non-Error objects
+    console.error('An unknown error object was thrown:', error);
+    return res.status(500).json({ message: 'An unknown error occurred while processing the file.' });
   }
 });
 

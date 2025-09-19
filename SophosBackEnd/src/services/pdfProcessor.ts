@@ -5,106 +5,52 @@
 
 import pdf from 'pdf-parse';
 import { extractConcepts, createEmbedding } from './ai';
-import { getFromCache, storeInCache } from './cache';
-import * as crypto from 'crypto';
-
-export let vectorStore: { text: string; embedding: number[] }[] = [];
-
-// Helper function to clear the store (e.g., when a new PDF is uploaded)
-export function clearVectorStore() {
-  console.log('Clearing vector store...');
-  vectorStore = [];
-}
 
 export async function processPdf(fileBuffer: Buffer) {
+  // We wrap the entire function in a try...catch to ensure no errors are unhandled.
   try {
     console.log('Starting PDF processing...');
     
-    // Create a unique key for this file based on its content (hash)
-    const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-    const cacheKey = `pdf-${hash}`;
-
-    // 1. Check the cache first
-    const cachedResult = getFromCache(cacheKey);
-    if (cachedResult) {
-      console.log('Found cached result, using it');
-      vectorStore = cachedResult.ragData || [];
-      return {
-        concepts: cachedResult.concepts,
-        chunks: cachedResult.ragData || []
-      };
-    }
-
-    clearVectorStore();
-
-    // 2. If not in cache, proceed with processing
-    console.log('Parsing PDF...');
+    // 1. Parse the PDF to extract text.
     const data = await pdf(fileBuffer);
     const text = data.text;
-    
     if (!text || text.trim().length === 0) {
-      throw new Error('Could not extract text from the PDF or PDF is empty.');
+      throw new Error('Could not extract text from the PDF.');
     }
+    console.log(`PDF parsed. Text length: ${text.length}`);
 
-    console.log('PDF parsed successfully, text length:', text.length);
-
-    // --- RAG PIPELINE ---
-    // 1. Chunk the text into paragraphs. We filter out very short chunks.
+    // 2. Create text chunks for the RAG pipeline.
     const chunks = text.split(/\n\s*\n/).filter(chunk => chunk.trim().length > 50);
-    console.log(`Created ${chunks.length} text chunks for RAG.`);
-
     if (chunks.length === 0) {
-      throw new Error('No meaningful text chunks found in PDF');
+      throw new Error('No meaningful text chunks found in PDF.');
     }
+    console.log(`Created ${chunks.length} text chunks.`);
 
-    // 2. Create an embedding for each chunk in parallel.
-    console.log('Creating embeddings for all chunks...');
-    const embeddings = await Promise.all(
-      chunks.map(async (chunk, index) => {
-        try {
-          return await createEmbedding(chunk);
-        } catch (error) {
-          console.error(`Failed to create embedding for chunk ${index}:`, error);
-          throw error;
-        }
-      })
-    );
-    console.log('Successfully created embeddings for all chunks.');
-
-    // 3. Combine chunks with their embeddings and store them.
+    // 3. Create embeddings for all chunks in parallel.
+    console.log('Creating embeddings...');
+    const embeddings = await Promise.all(chunks.map(createEmbedding));
+    console.log('Embeddings created successfully.');
+    
     const ragData = chunks.map((chunk, i) => ({
       text: chunk,
       embedding: embeddings[i],
     }));
-    vectorStore = ragData;
 
-    // --- CONCEPT EXTRACTION ---
-    console.log('Extracting concepts from text...');
+    // 4. Extract the concepts for the mind map.
+    console.log('Extracting concepts...');
     const textChunkForMap = text.substring(0, 15000);
     const concepts = await extractConcepts(textChunkForMap);
-    console.log('Successfully extracted concepts');
+    console.log('Concepts extracted successfully.');
 
-    // Store both the concepts and the RAG data in the cache
-    const resultToCache = { concepts, ragData };
-    storeInCache(cacheKey, resultToCache);
-
-    // Return both concepts and chunks for database storage
+    // 5. Return the complete, processed data.
     return {
       concepts,
-      chunks: ragData
+      chunks: ragData,
     };
     
   } catch (error) {
-    console.error('Error in PDF processing pipeline:', error);
-    
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
-    }
-    
-    throw new Error(`PDF processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('A critical error occurred in the PDF processing pipeline:', error);
+    // We re-throw the error to be caught by the route handler in document.ts
+    throw error;
   }
 }
