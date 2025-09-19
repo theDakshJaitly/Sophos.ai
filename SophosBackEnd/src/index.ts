@@ -40,7 +40,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // --- ROUTES ---
-app.use('/api/documents', documentRoutes);
+app.use('/api/documents', authMiddleware, documentRoutes);
 app.use('/api/chat', chatRoutes);
 // app.use('/api/projects', projectRoutes); // 👈 Disabled for MVP
 

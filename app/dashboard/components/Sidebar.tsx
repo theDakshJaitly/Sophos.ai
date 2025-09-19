@@ -24,37 +24,35 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
     setIsLoading(true);
     setWorkflowData(null);
-    
     try {
       // 1. Get the current user session from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
       if (sessionError || !session) {
         throw new Error("Your session could not be verified. Please log in again.");
       }
-      
       const formData = new FormData();
       formData.append('file', file);
+
+      // Debug: Log token and headers
+      console.log('Supabase session:', session);
+      console.log('Access token:', session.access_token);
+      const headers = {
+        'Authorization': `Bearer ${session.access_token}`
+      };
+      console.log('Upload request headers:', headers);
 
       // 2. Make the authenticated API call with the correctly formatted headers
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/upload`,
         formData,
-        { 
-          headers: { 
-            // The 'Authorization' header is the crucial part for our backend middleware
-            'Authorization': `Bearer ${session.access_token}` 
-          } 
-        }
+        { headers }
       );
 
-      setWorkflowData(response.data.concepts);
-
+  setWorkflowData(response.data);
       setRecentUploads(prev => [
         { id: new Date().toISOString(), name: file.name },
         ...prev
       ].slice(0, 5));
-      
       toast({
         title: "Success!",
         description: `"${file.name}" was processed successfully.`,
