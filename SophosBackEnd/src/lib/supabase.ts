@@ -8,7 +8,7 @@ export type SupabaseClients = {
 export const getSupabaseClients = (): SupabaseClients => {
   const url = process.env.SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url) return { anon: null, service: null };
 

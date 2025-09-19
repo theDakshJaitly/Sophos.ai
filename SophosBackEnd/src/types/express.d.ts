@@ -5,3 +5,11 @@ declare module 'express-serve-static-core' {
     user?: UserJwtPayload;
   }
 }
+
+declare global {
+  namespace Express {
+    export interface Request {
+      user?: User;
+    }
+  }
+}

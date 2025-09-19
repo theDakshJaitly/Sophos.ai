@@ -34,7 +34,6 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     }
     
     console.log("Token successfully validated for user:", user.id);
-    // @ts-ignore
     req.user = user;
     next();
 
