@@ -19,7 +19,7 @@ export const getSupabaseClients = (): SupabaseClients => {
 };
 
 export const hasSupabaseConfig = (): boolean => {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE);
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 };
 
 

@@ -6,6 +6,7 @@ import { GeistSans } from 'geist/font'
 import Script from 'next/script'
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/react";
+import { supabase } from '@/lib/supabase-client';
 
 const inter = Inter({ subsets: ["latin"] })
 

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { chatApi } from '@/utils/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,18 +52,23 @@ export function ChatTab() {
 
 
 
-      const response = await axios.post<{ answer: string }>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat`,
-        { message: input }
-      );
+      // Use chatApi to ensure Authorization header is sent
+      const response = await chatApi.sendMessage('', input); // Pass projectId if needed, else empty string
       
       const assistantMessage: Message = { role: 'assistant', content: response.data.answer };
       setMessages((prev) => [...prev, assistantMessage]);
 
     } catch (error) {
-      const errorMessageContent = (axios.isAxiosError(error) && error.response?.data?.message)
-        ? error.response.data.message
-        : "Sorry, I ran into an error. Please try again.";
+      // Handle error from chatApi (axios instance)
+      let errorMessageContent = "Sorry, I ran into an error. Please try again.";
+      if (error && typeof error === 'object' &&
+          'isAxiosError' in error &&
+          (error as any).isAxiosError &&
+          (error as any).response &&
+          (error as any).response.data &&
+          (error as any).response.data.message) {
+        errorMessageContent = (error as any).response.data.message;
+      }
       
       setMessages((prev) => [...prev, { role: 'assistant', content: errorMessageContent }]);
 

@@ -41,7 +41,7 @@ app.use(express.json());
 
 // --- ROUTES ---
 app.use('/api/documents', authMiddleware, documentRoutes);
-app.use('/api/chat', chatRoutes);
+app.use('/api/chat', authMiddleware, chatRoutes);
 // app.use('/api/projects', projectRoutes); // 👈 Disabled for MVP
 
 // --- DATABASE CONNECTION (DISABLED FOR MVP) ---

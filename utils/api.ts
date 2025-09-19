@@ -38,8 +38,8 @@ export const documentApi = {
 
 export const chatApi = {
   // Send message
-  sendMessage: (projectId: string, message: string) =>
-    api.post('/chat/message', { projectId, message }),
+  sendMessage: (_projectId: string, message: string) =>
+    api.post('/chat', { message }),
 };
 
 export const devApi = {

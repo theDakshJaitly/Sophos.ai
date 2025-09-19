@@ -34,6 +34,27 @@ interface InputEdge {
 }
 
 export default function DashboardPage() {
+  // Keep Supabase JWT in localStorage for API calls
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        localStorage.setItem('token', session.access_token);
+      } else {
+        localStorage.removeItem('token');
+      }
+    });
+
+    // Set token on first load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        localStorage.setItem('token', session.access_token);
+      }
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
   const [workflowData, setWorkflowData] = useState<WorkflowData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [recentUploads, setRecentUploads] = useState<UploadedFile[]>([]);

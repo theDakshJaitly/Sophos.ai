@@ -20,7 +20,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (magnitudeA * magnitudeB);
 }
 
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', async (req, res) => {
   const { message } = req.body;
 
   if (!message) {
@@ -42,7 +42,7 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 
   try {
-    const userId = (req.user as UserJwtPayload).id;
+  const userId = res.locals.user.id;
     console.log(`Processing chat message for user: ${userId}`);
 
     // 1. Create an embedding for the user's question
@@ -85,13 +85,29 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     // 4. Calculate similarity scores and get top 3 most relevant chunks
-    const chunksWithScores = chunks.map(chunk => ({
-      text: chunk.content,
-      score: cosineSimilarity(queryEmbedding, chunk.embedding)
-    }));
+    const chunksWithScores = chunks
+      .map(chunk => {
+        let embedding = chunk.embedding;
+        if (typeof embedding === 'string') {
+          try {
+            embedding = JSON.parse(embedding);
+          } catch {
+            embedding = null;
+          }
+        }
+        if (!Array.isArray(embedding) || embedding.some(v => typeof v !== 'number')) {
+          return null; // skip invalid embedding
+        }
+        return {
+          text: chunk.content,
+          score: cosineSimilarity(queryEmbedding, embedding)
+        };
+      })
+      .filter(Boolean);
 
     // Sort by similarity score (highest first) and take top 3
     const topChunks = chunksWithScores
+      .filter((c): c is { text: string; score: number } => c !== null)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
 

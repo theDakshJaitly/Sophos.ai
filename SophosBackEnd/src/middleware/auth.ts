@@ -9,12 +9,16 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     return res.status(401).json({ message: 'Authorization header is missing or malformed.' });
   }
 
+
   const token = authHeader.split(' ')[1];
-  console.log(`Middleware received token starting with: ${token.substring(0, 10)}...`);
+  console.log(`\n[AUTH MIDDLEWARE] Route: ${req.method} ${req.originalUrl}`);
+  console.log(`[AUTH MIDDLEWARE] Received token (first 20 chars): ${token.substring(0, 20)}...`);
 
   try {
     // We ask Supabase to validate the token and give us the user
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  console.log(`[AUTH MIDDLEWARE] Supabase getUser result:`, { user, error });
 
     // If Supabase returns an error, we log it and reject the request
     if (error) {

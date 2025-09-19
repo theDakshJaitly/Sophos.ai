@@ -15,29 +15,36 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // This function uses Groq for the mind map - NO CHANGES NEEDED
 export async function extractConcepts(text: string) {
-  // ... your existing code for this function is perfect.
+  // Improved prompt for robust, connected, and meaningful mindmaps
   const prompt = `
-    Analyze the following academic text to extract key topics and their relationships.
-    Respond with ONLY a valid JSON object with "nodes" and "edges" keys. Do not include any other text.
-    
+    You are an expert at extracting knowledge graphs from academic and technical documents.
+    Your job is to:
+    1. Identify the most important concepts, topics, or entities in the text.
+    2. Identify the relationships between these concepts, and connect them with meaningful, descriptive edge labels.
+    3. Output a JSON object with two keys: "nodes" and "edges".
+
     RULES FOR NODES:
     - "nodes" is an array of objects.
-    - Each node object must have a "label" (string) and an "id" (string).
-    - The "id" for each node MUST be a simple sequential number as a string. For example: "1", "2", "3", etc.
+    - Each node object must have a "label" (string, 1-5 words, clear and specific) and an "id" (string, sequential: "1", "2", ...).
+    - Only include the most important and unique concepts (avoid generic terms like "introduction", "summary", etc).
 
     RULES FOR EDGES:
     - "edges" is an array of objects.
-    - Each edge object must have a "source", "target", and "label".
-    - CRITICAL RULE: The "source" and "target" values in each edge MUST EXACTLY MATCH one of the simple numeric string "id"s from the "nodes" array you just generated. Do not use the node's label or a shortened version for the "source" or "target".
+    - Each edge object must have a "source" (string, node id), "target" (string, node id), and "label" (string, 1-5 words, describing the relationship).
+    - Every edge must connect two valid node ids from the "nodes" array.
+    - There should be at least as many edges as nodes, and the graph should be as connected as possible.
+    - Do NOT create self-loops (source and target cannot be the same).
 
-    EXAMPLE:
+    EXAMPLE OUTPUT:
     {
       "nodes": [
-        { "id": "1", "label": "Machine Learning" },
-        { "id": "2", "label": "Ethics" }
+        { "id": "1", "label": "Neural Networks" },
+        { "id": "2", "label": "Backpropagation" },
+        { "id": "3", "label": "Gradient Descent" }
       ],
       "edges": [
-        { "source": "1", "target": "2", "label": "has implications for" }
+        { "source": "1", "target": "2", "label": "trained with" },
+        { "source": "2", "target": "3", "label": "uses" }
       ]
     }
 
@@ -45,18 +52,29 @@ export async function extractConcepts(text: string) {
     ---
     ${text}
     ---
+
+    Output ONLY the JSON object, nothing else.
   `;
   const chatCompletion = await groq.chat.completions.create({
     messages: [{ role: 'user', content: prompt }],
-    model: 'llama-3.1-8b-instant', // Your working model
+    model: 'llama-3.1-8b-instant',
     temperature: 0.2,
     response_format: { type: 'json_object' }
   });
   const jsonResponse = chatCompletion.choices[0]?.message?.content;
+  console.log('Raw LLM response for mindmap:', jsonResponse);
   if (!jsonResponse) {
     throw new Error('Groq API returned an empty response for concepts.');
   }
-  return JSON.parse(jsonResponse);
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonResponse);
+  } catch (e) {
+    console.error('Failed to parse LLM mindmap JSON:', jsonResponse);
+    throw e;
+  }
+  console.log('Parsed mindmap concepts:', parsed);
+  return parsed;
 }
 
 // This function uses Groq for the chat - NO CHANGES NEEDED
