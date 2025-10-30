@@ -1,5 +1,21 @@
 // Utility to recursively remove null bytes from all string values in an object
 // Remove actual null byte characters from all strings in an object recursively
+
+// In SophosBackEnd/src/routes/document.ts
+
+
+import { Router } from 'express';
+import multer from 'multer';
+import { processPdf } from '../services/pdfProcessor';
+import { supabaseAdmin } from '../lib/supabase-admin'; // Use the admin client
+import crypto from 'crypto';
+
+const router = Router();
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
 function removeNullBytes(obj: any): any {
   if (typeof obj === 'string') {
     // Remove all null byte characters (\x00 or \u0000)
@@ -15,20 +31,7 @@ function removeNullBytes(obj: any): any {
   }
   return obj;
 }
-// In SophosBackEnd/src/routes/document.ts
 
-
-import { Router } from 'express';
-import multer from 'multer';
-import { processPdf } from '../services/pdfProcessor';
-import { supabaseAdmin } from '../lib/supabase-admin'; // Use the admin client
-import crypto from 'crypto';
-
-const router = Router();
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }
-});
 
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {

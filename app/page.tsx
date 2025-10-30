@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronRight, FileText, PenTool, Search, Share2, Zap, Users, Users2, Store } from "lucide-react"
 import { WaveBackground } from "@/components/ui/wave-background"
+import { Analytics } from "@vercel/analytics/next"
 
 export default function Home() {
   return (
@@ -184,6 +185,7 @@ export default function Home() {
           </nav>
         </div>
       </footer>
+      <Analytics />
     </div>
   )
 }

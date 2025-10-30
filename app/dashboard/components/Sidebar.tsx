@@ -81,6 +81,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-full bg-primary" />
         <h1 className="text-2xl font-bold">Sophos.ai</h1>
+        
       </div>
 
       <div className="flex-grow">
