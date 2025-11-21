@@ -18,7 +18,7 @@ export const projectApi = {
   getProjects: () => api.get('/projects'),
 
   // Create new project
-  createProject: (data: { name: string; group: string }) => 
+  createProject: (data: { name: string; group: string }) =>
     api.post('/projects', data),
 };
 
@@ -32,14 +32,14 @@ export const documentApi = {
   },
 
   // Get documents for a project
-  getProjectDocuments: (projectId: string) => 
+  getProjectDocuments: (projectId: string) =>
     api.get(`/documents/project/${projectId}`),
 };
 
 export const chatApi = {
   // Send message
   sendMessage: (_projectId: string, message: string) =>
-    api.post('/api/chat', { message }),
+    api.post('/chat', { message }),
 };
 
 export const devApi = {
