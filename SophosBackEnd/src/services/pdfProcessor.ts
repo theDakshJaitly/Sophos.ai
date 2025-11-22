@@ -4,7 +4,7 @@
 // In SophosBackEnd/src/services/pdfProcessor.ts
 
 import pdf from 'pdf-parse';
-import { extractConcepts, createEmbedding, extractTimelineEvents } from './ai';
+import { extractConcepts, createEmbedding, extractTimelineEvents, extractActionPlan } from './ai';
 
 export async function processPdf(fileBuffer: Buffer) {
   // We wrap the entire function in a try...catch to ensure no errors are unhandled.
@@ -36,22 +36,24 @@ export async function processPdf(fileBuffer: Buffer) {
       embedding: embeddings[i],
     }));
 
-    // 4. Extract the concepts for the mind map.
-    console.log('Extracting concepts and timeline events...');
+    // 4. Extract the concepts, timeline, and action plan.
+    console.log('Extracting concepts, timeline events, and action plan...');
     const textChunkForMap = text.substring(0, 15000);
 
-    // Extract concepts and timeline in parallel
-    const [concepts, timeline] = await Promise.all([
+    // Extract all AI-powered features in parallel
+    const [concepts, timeline, actionPlan] = await Promise.all([
       extractConcepts(textChunkForMap),
-      extractTimelineEvents(textChunkForMap)
+      extractTimelineEvents(textChunkForMap),
+      extractActionPlan(textChunkForMap)
     ]);
 
-    console.log('Concepts and timeline extracted successfully.');
+    console.log('Concepts, timeline, and action plan extracted successfully.');
 
     // 5. Return the complete, processed data.
     return {
       concepts,
       timeline,
+      actionPlan,
       chunks: ragData,
     };
 

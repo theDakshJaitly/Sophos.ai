@@ -22,7 +22,8 @@ export interface WorkflowData {
   nodes: InputNode[];
   edges: InputEdge[];
   timeline?: any[];  // Timeline events from backend
-  documentId?: string; // Document ID from backend
+  actionPlan?: any;  // Action plan from backend
+  documentId?: string;
 }
 
 interface InputNode {

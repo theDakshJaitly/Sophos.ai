@@ -47,6 +47,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
         { headers }
       );
 
+      console.log('PDF Upload Response:', response.data);
       setWorkflowData(response.data);
 
       // Extract documentId from response
@@ -105,7 +106,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       const response = await axios.post(
         getApiUrl('youtube/process'),
-        { url: youtubeUrl },
+        { youtubeUrl },
         {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
@@ -113,7 +114,10 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
         }
       );
 
-      setWorkflowData(response.data.concepts);
+      console.log('YouTube Upload Response:', response.data);
+
+      // Store the full response data (includes concepts, timeline, actionPlan)
+      setWorkflowData(response.data);
 
       // Extract documentId from response
       const documentId = response.data.documentId;

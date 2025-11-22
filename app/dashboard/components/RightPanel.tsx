@@ -148,7 +148,7 @@ export function RightPanel() {
       <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
         <div className="text-center">
           <p className="text-xs text-gray-400 font-medium">
-            DJ Productions
+            A Prometheus Rising Product
           </p>
           <p className="text-xs text-gray-300 mt-1">
             ✨ Powered by AI

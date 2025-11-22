@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 import { getSupabaseClients, hasSupabaseConfig } from '../lib/supabase';
-import { createEmbedding, extractTimelineEvents } from '../services/ai';
+import { createEmbedding, extractTimelineEvents, extractActionPlan } from '../services/ai';
 import Groq from 'groq-sdk';
 import crypto from 'crypto';
 
@@ -58,7 +58,7 @@ router.post('/process', async (req, res) => {
         // Check if already processed
         const { data: existingDoc, error: findError } = await supabase
             .from('documents')
-            .select('id, concepts, timeline')
+            .select('id, concepts, timeline, action_plan')
             .eq('user_id', userId)
             .eq('file_hash', hash)
             .maybeSingle();
@@ -75,9 +75,14 @@ router.post('/process', async (req, res) => {
             let timeline = existingDoc.timeline || { events: [] };
             if (!timeline.events) timeline = { events: [] };
 
+            // Ensure action plan structure
+            let actionPlan = existingDoc.action_plan || { phases: [] };
+            if (!actionPlan.phases) actionPlan = { phases: [] };
+
             return res.status(200).json({
                 concepts: existingDoc.concepts,
                 timeline: timeline.events,
+                actionPlan: actionPlan.phases,
                 videoId,
                 documentId: existingDoc.id,
                 cached: true
@@ -143,6 +148,16 @@ router.post('/process', async (req, res) => {
             timeline.events = [];
         }
 
+        // Extract action plan from transcript
+        console.log('Extracting action plan from transcript...');
+        const actionPlan = await extractActionPlan(transcript.substring(0, 15000));
+        console.log('Action plan extracted successfully.');
+
+        // Ensure action plan structure
+        if (!actionPlan || !actionPlan.phases) {
+            actionPlan.phases = [];
+        }
+
         // Create chunks for semantic search
         const chunks = chunkText(transcript, 500);
         const chunksWithEmbeddings = await Promise.all(
@@ -160,7 +175,8 @@ router.post('/process', async (req, res) => {
                 file_name: `YouTube: ${videoId}`,
                 file_hash: hash,
                 concepts,
-                timeline
+                timeline,
+                action_plan: actionPlan
             })
             .select('id')
             .single();
@@ -191,6 +207,7 @@ router.post('/process', async (req, res) => {
         res.status(200).json({
             concepts,
             timeline: timeline.events,
+            actionPlan: actionPlan.phases,
             videoId,
             documentId: document.id,
             cached: false

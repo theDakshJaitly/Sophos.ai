@@ -19,13 +19,36 @@ interface Message {
 }
 
 export function ChatTab() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const STORAGE_KEY = 'sophos_chat_messages';
+
+  // Initialize messages from sessionStorage
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error('Failed to parse stored messages:', e);
+        }
+      }
+    }
+    return [];
+  });
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { chatMessage, setChatMessage, triggerChatSubmit, setTriggerChatSubmit } = useDashboard();
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Save messages to sessionStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+  }, [messages]);
 
   // Sync input with context
   useEffect(() => {

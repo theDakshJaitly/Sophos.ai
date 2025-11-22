@@ -53,7 +53,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     // 2. Check for duplicate by hash and user_id
     const { data: existingDoc, error: findError } = await supabaseAdmin
       .from('documents')
-      .select('id, concepts, timeline')
+      .select('id, concepts, timeline, action_plan')
       .eq('user_id', userId)
       .eq('file_hash', hash)
       .maybeSingle();
@@ -73,9 +73,14 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         let timeline = existingDoc.timeline || { events: [] };
         if (!timeline.events) timeline = { events: [] };
 
+        // Ensure action plan structure
+        let actionPlan = existingDoc.action_plan || { phases: [] };
+        if (!actionPlan.phases) actionPlan = { phases: [] };
+
         return res.status(200).json({
           ...safeConcepts,
           timeline: timeline.events,
+          actionPlan: actionPlan.phases,
           documentId: existingDoc.id
         });
       }
@@ -99,8 +104,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     console.log(`Processing file: ${req.file.originalname} for user: ${userId}`);
 
 
-    // 3. Process the PDF to get concepts and chunks.
-    let { concepts, timeline, chunks } = await processPdf(fileBuffer);
+    // 3. Process the PDF to get concepts, timeline, action plan, and chunks.
+    let { concepts, timeline, actionPlan, chunks } = await processPdf(fileBuffer);
     // Remove null bytes from concepts before saving
     concepts = removeNullBytes(concepts);
     // Always ensure both nodes and edges are present and are arrays
@@ -112,7 +117,12 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       timeline = { events: [] };
     }
 
-    // 4. Insert the main document record into the database, including file_hash, concepts, and timeline
+    // Ensure action plan has proper structure
+    if (!actionPlan || !actionPlan.phases) {
+      actionPlan = { phases: [] };
+    }
+
+    // 4. Insert the main document record into the database, including file_hash, concepts, timeline, and action_plan
     const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
       .insert({
@@ -120,7 +130,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         file_name: req.file.originalname,
         file_hash: hash,
         concepts,
-        timeline
+        timeline,
+        action_plan: actionPlan
       })
       .select('id')
       .single();
@@ -146,10 +157,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
     console.log(`Successfully saved ${chunksToInsert.length} chunks to database.`);
 
-    // 6. Return the concepts and timeline to the frontend to build the mind map and timeline.
+    // 6. Return the concepts, timeline, and action plan to the frontend.
     res.status(200).json({
       ...concepts,
       timeline: timeline.events,
+      actionPlan: actionPlan.phases,
       documentId: document.id
     });
 

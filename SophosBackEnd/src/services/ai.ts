@@ -183,6 +183,123 @@ export async function extractTimelineEvents(text: string) {
   return parsed;
 }
 
+// Extract hierarchical action plan from document text
+export async function extractActionPlan(text: string) {
+  const prompt = `
+    You are an expert at extracting actionable steps and organizing them into structured plans.
+    Analyze this document and create a hierarchical action plan with phases and steps.
+    
+    RULES FOR ACTION PLAN EXTRACTION:
+    1. **Phases**: Group related steps into logical phases/categories
+       - Each phase should represent a major objective or stage
+       - Use clear, concise phase titles (3-6 words)
+    
+    2. **Steps**: Break down each phase into concrete, actionable steps
+       - Steps should be specific and implementable
+       - Each step is a single, clear action
+       - Use imperative verbs (Install, Create, Configure, Test, etc.)
+    
+    3. **Priority**: Assign priority based on importance/urgency
+       - "high": Critical, must-do items
+       - "medium": Important but not urgent
+       - "low": Nice-to-have, optional items
+    
+    4. **Effort Estimate** (optional): Brief time/complexity estimate
+       - Examples: "5 minutes", "1 hour", "2 days", "Quick", "Complex"
+    
+    DOCUMENT TYPES TO HANDLE:
+    - **Tutorials/Guides**: Extract step-by-step instructions
+    - **Research Papers**: Methodology → Analysis → Conclusions
+    - **Business Reports**: Recommendations and action items
+    - **Meeting Notes**: Decisions and next steps
+    - **How-to Documents**: Procedures and processes
+    - **Technical Specs**: Implementation requirements
+    
+    IMPORTANT:
+    - Minimum 2 phases, maximum 6 phases
+    - Minimum 2 steps per phase, maximum 10 steps per phase
+    - Only extract actual actionable items, not general information
+    - If no clear action plan exists, extract key points as steps
+    
+    OUTPUT FORMAT (JSON only):
+    {
+      "phases": [
+        {
+          "id": "phase_1",
+          "title": "Environment Setup",
+          "description": "Prepare development environment and tools",
+          "steps": [
+            {
+              "id": "step_1_1",
+              "text": "Install Node.js version 18 or higher",
+              "priority": "high",
+              "estimated_effort": "5 minutes"
+            },
+            {
+              "id": "step_1_2",
+              "text": "Configure database connection settings",
+              "priority": "high",
+              "estimated_effort": "15 minutes"
+            }
+          ]
+        },
+        {
+          "id": "phase_2",
+          "title": "Implementation",
+          "description": "Build core functionality",
+          "steps": [
+            {
+              "id": "step_2_1",
+              "text": "Create REST API endpoints for user management",
+              "priority": "medium",
+              "estimated_effort": "2 hours"
+            }
+          ]
+        }
+      ]
+    }
+    
+    Text to analyze:
+    ---
+    ${text}
+    ---
+    
+    Output ONLY valid JSON, nothing else.
+  `;
+
+  const chatCompletion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: 'llama-3.1-8b-instant',
+    temperature: 0.3,
+    response_format: { type: 'json_object' }
+  });
+
+  const jsonResponse = chatCompletion.choices[0]?.message?.content;
+  console.log('Raw LLM response for action plan:', jsonResponse);
+
+  if (!jsonResponse) {
+    throw new Error('Groq API returned an empty response for action plan.');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonResponse);
+  } catch (e) {
+    console.error('Failed to parse LLM action plan JSON:', jsonResponse);
+    throw e;
+  }
+
+  console.log('Parsed action plan:', parsed);
+
+  // Validate and ensure proper structure
+  if (!parsed.phases || !Array.isArray(parsed.phases)) {
+    console.warn('No phases array found, returning empty action plan');
+    return { phases: [] };
+  }
+
+  return parsed;
+}
+
 // This function uses Groq for the chat - NO CHANGES NEEDED
 export async function generateChatResponse(prompt: string): Promise<string> {
   // ... your existing code for this function is perfect.
