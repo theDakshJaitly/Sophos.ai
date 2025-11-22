@@ -14,21 +14,21 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { getLayoutedElements } from '@/lib/layout';
-import { motion } from 'framer-motion';
-import { LensSwitcher, ViewMode } from '../LensSwitcher';
+import { ViewMode } from '../LensSwitcher';
 import { TimelineView } from '../views/TimelineView';
 import { PlanView } from '../views/PlanView';
 import { NodeInfoBox } from '../NodeInfoBox';
+import { motion } from 'framer-motion';
 
 interface WorkflowTabProps {
   data: { nodes: any[]; edges: any[] } | null;
   onNodeClick?: (nodeLabel: string) => void;
+  viewMode: ViewMode;
 }
 
-export function WorkflowTab({ data, onNodeClick }: WorkflowTabProps) {
+export function WorkflowTab({ data, onNodeClick, viewMode }: WorkflowTabProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>('graph');
   const [selectedNode, setSelectedNode] = useState<{ id: string; label: string; description?: string; source?: string } | null>(null);
   const [infoBoxPosition, setInfoBoxPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -101,8 +101,6 @@ export function WorkflowTab({ data, onNodeClick }: WorkflowTabProps) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <LensSwitcher viewMode={viewMode} setViewMode={setViewMode} />
-
       <motion.div
         key={viewMode}
         initial={{ opacity: 0 }}

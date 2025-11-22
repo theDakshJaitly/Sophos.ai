@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { chatApi } from '@/utils/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +10,8 @@ import { SendHorizonal, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase-client';
 import { useDashboard } from '../../context/DashboardContext';
+import axios from 'axios';
+import { getApiUrl } from '@/lib/api';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -69,8 +70,16 @@ export function ChatTab() {
         throw new Error("User not authenticated");
       }
 
-      // Use chatApi to ensure Authorization header is sent
-      const response = await chatApi.sendMessage('', input);
+      // Use axios directly to ensure Authorization header is sent and URL is correct
+      const response = await axios.post(
+        getApiUrl('chat'),
+        { message: input },
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        }
+      );
 
       const assistantMessage: Message = { role: 'assistant', content: response.data.answer };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -115,8 +124,8 @@ export function ChatTab() {
                 <AvatarFallback>{msg.role === 'user' ? 'U' : 'AI'}</AvatarFallback>
               </Avatar>
               <div className={`rounded-lg p-3 max-w-[70%] break-words ${msg.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>

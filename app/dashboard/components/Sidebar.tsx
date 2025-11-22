@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
+import { getApiUrl } from '@/lib/api';
 
 interface SidebarProps {
   setWorkflowData: (data: any) => void;
@@ -40,7 +41,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       };
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/upload`,
+        getApiUrl('documents/upload'),
         formData,
         { headers }
       );
@@ -92,7 +93,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       }
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/youtube/process`,
+        getApiUrl('youtube/process'),
         { url: youtubeUrl },
         {
           headers: {
@@ -112,7 +113,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
         description: "YouTube video processed successfully.",
       });
 
-      setYoutubeUrl(''); // Clear input
+      setYoutubeUrl('');
 
     } catch (error) {
       const errMessage = (axios.isAxiosError(error) && error.response?.data?.error)

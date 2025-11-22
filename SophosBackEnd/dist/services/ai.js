@@ -35,11 +35,16 @@ function extractConcepts(text) {
     Your job is to:
     1. Identify the most important concepts, topics, or entities in the text.
     2. Identify the relationships between these concepts, and connect them with meaningful, descriptive edge labels.
-    3. Output a JSON object with two keys: "nodes" and "edges".
+    3. For each concept, provide a brief description and the source text that introduced it.
+    4. Output a JSON object with two keys: "nodes" and "edges".
 
     RULES FOR NODES:
     - "nodes" is an array of objects.
-    - Each node object must have a "label" (string, 1-5 words, clear and specific) and an "id" (string, sequential: "1", "2", ...).
+    - Each node object must have:
+      * "id" (string, sequential: "1", "2", ...)
+      * "label" (string, 1-5 words, clear and specific)
+      * "description" (string, 1-2 sentences explaining what this concept is)
+      * "source" (string, a relevant excerpt from the text where this concept appears, 10-30 words)
     - Only include the most important and unique concepts (avoid generic terms like "introduction", "summary", etc).
 
     RULES FOR EDGES:
@@ -52,9 +57,24 @@ function extractConcepts(text) {
     EXAMPLE OUTPUT:
     {
       "nodes": [
-        { "id": "1", "label": "Neural Networks" },
-        { "id": "2", "label": "Backpropagation" },
-        { "id": "3", "label": "Gradient Descent" }
+        { 
+          "id": "1", 
+          "label": "Neural Networks",
+          "description": "A computational model inspired by biological neural networks, used for pattern recognition and machine learning.",
+          "source": "Neural networks are powerful tools for learning complex patterns from data through interconnected layers of artificial neurons."
+        },
+        { 
+          "id": "2", 
+          "label": "Backpropagation",
+          "description": "An algorithm for training neural networks by propagating errors backward through the network layers.",
+          "source": "The backpropagation algorithm efficiently computes gradients by working backwards from output to input layers."
+        },
+        { 
+          "id": "3", 
+          "label": "Gradient Descent",
+          "description": "An optimization algorithm that iteratively adjusts parameters to minimize a loss function.",
+          "source": "Gradient descent updates weights by moving in the direction of steepest decrease in the error function."
+        }
       ],
       "edges": [
         { "source": "1", "target": "2", "label": "trained with" },

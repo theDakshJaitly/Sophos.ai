@@ -1,4 +1,3 @@
-// In app/dashboard/components/tabs/QuizTab.tsx
 'use client';
 
 import { useState } from 'react';
@@ -9,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase-client';
 import { motion } from 'framer-motion';
+import { getApiUrl } from '@/lib/api';
 
 interface QuizOption {
   A: string;
@@ -49,7 +49,7 @@ export function QuizTab() {
       }
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/quiz/generate`,
+        getApiUrl('quiz/generate'),
         {
           difficulty: 'medium',
           questionCount: 5
@@ -86,7 +86,7 @@ export function QuizTab() {
   };
 
   const handleOptionSelect = (questionIndex: number, option: string) => {
-    if (showResults) return; // Don't allow changes after submitting
+    if (showResults) return;
 
     setSelectedAnswers(prev => ({
       ...prev,
@@ -129,7 +129,6 @@ export function QuizTab() {
         : "border-border hover:border-primary/50 hover:bg-accent";
     }
 
-    // After submission
     if (isCorrect) {
       return "border-green-500 bg-green-50 dark:bg-green-950";
     }
