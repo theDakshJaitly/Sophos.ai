@@ -1,0 +1,220 @@
+"use strict";
+// In SophosBackEnd/src/routes/youtube.ts
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.youtubeRoutes = void 0;
+const express_1 = require("express");
+const supabase_1 = require("../lib/supabase");
+const ai_1 = require("../services/ai");
+const groq_sdk_1 = __importDefault(require("groq-sdk"));
+const crypto_1 = __importDefault(require("crypto"));
+const router = (0, express_1.Router)();
+exports.youtubeRoutes = router;
+const groq = new groq_sdk_1.default({
+    apiKey: process.env.GROQ_API_KEY,
+});
+// Extract video ID from YouTube URL
+function extractVideoId(url) {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+        /youtube\.com\/embed\/([^&\n?#]+)/,
+        /youtube\.com\/v\/([^&\n?#]+)/
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match)
+            return match[1];
+    }
+    return null;
+}
+// Process YouTube video (extract transcript and create mind map)
+router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const { url } = req.body;
+    if (!url) {
+        return res.status(400).json({ error: 'YouTube URL is required.' });
+    }
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+        return res.status(400).json({ error: 'Invalid YouTube URL.' });
+    }
+    if (!(0, supabase_1.hasSupabaseConfig)()) {
+        return res.status(500).json({ error: 'Database not configured.' });
+    }
+    const { service: supabase } = (0, supabase_1.getSupabaseClients)();
+    if (!supabase) {
+        return res.status(500).json({ error: 'Database connection failed.' });
+    }
+    try {
+        const userId = res.locals.user.id;
+        console.log(`Processing YouTube video ${videoId} for user: ${userId}`);
+        // Calculate hash for duplicate detection
+        const hash = crypto_1.default.createHash('sha256').update(videoId + userId).digest('hex');
+        // Check if already processed
+        const { data: existingDoc, error: findError } = yield supabase
+            .from('documents')
+            .select('id, concepts')
+            .eq('user_id', userId)
+            .eq('file_hash', hash)
+            .maybeSingle();
+        if (findError) {
+            console.error('Error checking for existing video:', findError);
+            return res.status(500).json({ error: 'Database error checking for duplicates.' });
+        }
+        if (existingDoc && existingDoc.concepts) {
+            console.log('Video already processed, returning existing concepts');
+            return res.status(200).json({
+                concepts: existingDoc.concepts,
+                cached: true
+            });
+        }
+        // In a real implementation, you would fetch the transcript here
+        // For now, we'll simulate with a placeholder
+        // You would typically use youtube-transcript library or YouTube Data API
+        console.log(`Fetching transcript for video: ${videoId}`);
+        // Simulated transcript fetching (replace with actual implementation)
+        const transcript = yield fetchYouTubeTranscript(videoId);
+        if (!transcript) {
+            return res.status(404).json({
+                error: 'Could not fetch transcript for this video. It may not have captions available.'
+            });
+        }
+        // Generate concepts/mind map from transcript
+        const conceptsPrompt = `
+      You are an expert at extracting knowledge graphs from educational content.
+      Analyze this YouTube video transcript and create a comprehensive mind map.
+      
+      RULES:
+      1. Identify main concepts and sub-topics
+      2. Create meaningful relationships between concepts
+      3. Use clear, concise labels (1-5 words)
+      4. Output JSON with "nodes" and "edges" arrays
+      
+      Each node needs: { "id": "1", "label": "Concept Name" }
+      Each edge needs: { "source": "1", "target": "2", "label": "relationship" }
+      
+      TRANSCRIPT:
+      ---
+      ${transcript.substring(0, 6000)}
+      ---
+      
+      Output ONLY valid JSON, nothing else.
+    `;
+        const conceptCompletion = yield groq.chat.completions.create({
+            messages: [{ role: 'user', content: conceptsPrompt }],
+            model: 'llama-3.1-8b-instant',
+            temperature: 0.2,
+            response_format: { type: 'json_object' }
+        });
+        const conceptsJson = (_b = (_a = conceptCompletion.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content;
+        if (!conceptsJson) {
+            throw new Error('Failed to generate concepts from transcript.');
+        }
+        const concepts = JSON.parse(conceptsJson);
+        // Ensure proper structure
+        if (!concepts.nodes)
+            concepts.nodes = [];
+        if (!concepts.edges)
+            concepts.edges = [];
+        // Create chunks for semantic search
+        const chunks = chunkText(transcript, 500);
+        const chunksWithEmbeddings = yield Promise.all(chunks.map((text) => __awaiter(void 0, void 0, void 0, function* () {
+            return ({
+                text,
+                embedding: yield (0, ai_1.createEmbedding)(text)
+            });
+        })));
+        // Save to database
+        const { data: document, error: docError } = yield supabase
+            .from('documents')
+            .insert({
+            user_id: userId,
+            file_name: `YouTube: ${videoId}`,
+            file_hash: hash,
+            concepts
+        })
+            .select('id')
+            .single();
+        if (docError) {
+            console.error('Error saving document:', docError);
+            throw docError;
+        }
+        // Save chunks
+        const chunksToInsert = chunksWithEmbeddings.map(chunk => ({
+            document_id: document.id,
+            content: chunk.text,
+            embedding: chunk.embedding
+        }));
+        const { error: chunksError } = yield supabase
+            .from('document_chunks')
+            .insert(chunksToInsert);
+        if (chunksError) {
+            yield supabase.from('documents').delete().eq('id', document.id);
+            throw chunksError;
+        }
+        console.log(`Successfully processed YouTube video: ${videoId}`);
+        res.status(200).json({
+            concepts,
+            videoId,
+            cached: false
+        });
+    }
+    catch (error) {
+        console.error('Error processing YouTube video:', error);
+        res.status(500).json({
+            error: 'Failed to process YouTube video.',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+}));
+// Helper function to fetch YouTube transcript
+// NOTE: This is a placeholder. You'll need to implement actual transcript fetching
+// using libraries like 'youtube-transcript' or YouTube Data API
+function fetchYouTubeTranscript(videoId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // PLACEHOLDER IMPLEMENTATION
+            // In production, use: npm install youtube-transcript
+            // const { YoutubeTranscript } = require('youtube-transcript');
+            // const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+            // return transcript.map((entry: any) => entry.text).join(' ');
+            console.warn('YouTube transcript fetching not implemented. Using placeholder.');
+            return `This is a placeholder transcript for video ${videoId}. 
+            Please implement actual transcript fetching using youtube-transcript library.`;
+        }
+        catch (error) {
+            console.error('Error fetching YouTube transcript:', error);
+            return null;
+        }
+    });
+}
+// Helper function to chunk text into smaller pieces
+function chunkText(text, maxLength) {
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    const chunks = [];
+    let currentChunk = '';
+    for (const sentence of sentences) {
+        if ((currentChunk + sentence).length > maxLength && currentChunk) {
+            chunks.push(currentChunk.trim());
+            currentChunk = sentence;
+        }
+        else {
+            currentChunk += ' ' + sentence;
+        }
+    }
+    if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+    }
+    return chunks;
+}
