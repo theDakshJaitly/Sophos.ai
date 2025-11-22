@@ -6,6 +6,7 @@ import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { RightPanel } from './components/RightPanel';
 import { Node, Edge } from '@xyflow/react';
+import { DashboardProvider } from './context/DashboardContext';
 
 import { supabase } from '@/lib/supabase-client';
 import { useRouter } from 'next/navigation';
@@ -69,7 +70,7 @@ export default function DashboardPage() {
           // Remove fragment so it isn't visible/processed again
           try {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          } catch {}
+          } catch { }
         } else {
           // No fragment token present; fallback to reading the Supabase client session
           supabase.auth.getSession().then(({ data: { session } }) => {
@@ -112,17 +113,19 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      <Sidebar 
-        setWorkflowData={setWorkflowData}
-        setIsLoading={setIsLoading}
-        recentUploads={recentUploads}
-        setRecentUploads={setRecentUploads}
-        isLoading={isLoading}
-      />
-       
-      <MainContent workflowData={workflowData} isLoading={isLoading} />
-      <RightPanel />
-    </div>
+    <DashboardProvider>
+      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+        <Sidebar
+          setWorkflowData={setWorkflowData}
+          setIsLoading={setIsLoading}
+          recentUploads={recentUploads}
+          setRecentUploads={setRecentUploads}
+          isLoading={isLoading}
+        />
+
+        <MainContent workflowData={workflowData} isLoading={isLoading} />
+        <RightPanel />
+      </div>
+    </DashboardProvider>
   );
 }
