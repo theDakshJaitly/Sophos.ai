@@ -43,12 +43,12 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       // 2. Make the authenticated API call with the correctly formatted headers
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/upload`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/upload`,
         formData,
         { headers }
       );
 
-  setWorkflowData(response.data);
+      setWorkflowData(response.data);
       setRecentUploads(prev => [
         { id: new Date().toISOString(), name: file.name },
         ...prev
@@ -57,7 +57,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
         title: "Success!",
         description: `"${file.name}" was processed successfully.`,
       });
-    
+
     } catch (error) {
       // 3. Show a clear error to the user if anything fails
       const errMessage = (axios.isAxiosError(error) && error.response?.data?.message)
@@ -81,7 +81,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-full bg-primary" />
         <h1 className="text-2xl font-bold">Sophos.ai</h1>
-        
+
       </div>
 
       <div className="flex-grow">
@@ -104,7 +104,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       <div className="mt-auto space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-2">Current Session</h3>
-           {recentUploads.length > 0 ? (
+          {recentUploads.length > 0 ? (
             <Button variant="secondary" className="w-full justify-start text-sm truncate">
               {recentUploads[0].name}
             </Button>
@@ -112,7 +112,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             <p className="text-xs text-muted-foreground px-2">No document loaded.</p>
           )}
         </div>
-        
+
         <label htmlFor="file-upload" className="w-full">
           <Button asChild className="w-full cursor-pointer" disabled={isLoading}>
             <span>
@@ -124,12 +124,12 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             </span>
           </Button>
         </label>
-        <input 
-          id="file-upload" 
-          type="file" 
-          className="hidden" 
-          onChange={handleFileChange} 
-          accept=".pdf" 
+        <input
+          id="file-upload"
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+          accept=".pdf"
           disabled={isLoading}
         />
       </div>
