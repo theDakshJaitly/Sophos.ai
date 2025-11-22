@@ -1,6 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { UploadedFile } from "../page";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
@@ -18,6 +20,7 @@ interface SidebarProps {
 
 export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecentUploads, isLoading }: SidebarProps) {
   const { toast } = useToast();
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -26,7 +29,6 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
     setIsLoading(true);
     setWorkflowData(null);
     try {
-      // 1. Get the current user session from Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         throw new Error("Your session could not be verified. Please log in again.");
@@ -34,15 +36,10 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       const formData = new FormData();
       formData.append('file', file);
 
-      // Debug: Log token and headers
-      console.log('Supabase session:', session);
-      console.log('Access token:', session.access_token);
       const headers = {
         'Authorization': `Bearer ${session.access_token}`
       };
-      console.log('Upload request headers:', headers);
 
-      // 2. Make the authenticated API call with the correctly formatted headers
       const response = await axios.post(
         getApiUrl('documents/upload'),
         formData,
@@ -60,7 +57,6 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       });
 
     } catch (error) {
-      // 3. Show a clear error to the user if anything fails
       const errMessage = (axios.isAxiosError(error) && error.response?.data?.message)
         ? error.response.data.message
         : error instanceof Error ? error.message : "An unknown error occurred.";
@@ -77,12 +73,70 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
     }
   };
 
+  const handleYoutubeSubmit = async () => {
+    if (!youtubeUrl.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Invalid URL",
+        description: "Please enter a YouTube URL.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setWorkflowData(null);
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error("Your session could not be verified. Please log in again.");
+      }
+
+      const response = await axios.post(
+        getApiUrl('youtube/process'),
+        { url: youtubeUrl },
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        }
+      );
+
+      setWorkflowData(response.data.concepts);
+      setRecentUploads(prev => [
+        { id: new Date().toISOString(), name: `YouTube: ${response.data.videoId}` },
+        ...prev
+      ].slice(0, 5));
+
+      toast({
+        title: "Success!",
+        description: "YouTube video processed successfully.",
+      });
+
+      setYoutubeUrl('');
+
+    } catch (error) {
+      const errMessage = (axios.isAxiosError(error) && error.response?.data?.error)
+        ? error.response.data.error
+        : error instanceof Error ? error.message : "An unknown error occurred.";
+
+      toast({
+        variant: "destructive",
+        title: "Processing Failed",
+        description: errMessage,
+      });
+      console.error("YouTube processing failed:", error);
+
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <aside className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col p-4">
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-full bg-primary" />
         <h1 className="text-2xl font-bold">Sophos.ai</h1>
-
       </div>
 
       <div className="flex-grow">
@@ -103,6 +157,56 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       </div>
 
       <div className="mt-auto space-y-4">
+        {/* Add Content Section */}
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Add Content</h3>
+
+          {/* YouTube URL Input */}
+          <div className="space-y-2 mb-3">
+            <label className="text-xs text-muted-foreground">Paste YouTube Link</label>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="https://youtube.com/watch?v=..."
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                disabled={isLoading}
+                className="flex-1 text-sm"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleYoutubeSubmit();
+                  }
+                }}
+              />
+              <Button
+                onClick={handleYoutubeSubmit}
+                disabled={isLoading || !youtubeUrl.trim()}
+                size="sm"
+              >
+                Go
+              </Button>
+            </div>
+          </div>
+
+          {/* Upload PDF Button */}
+          <label htmlFor="file-upload" className="w-full block">
+            <Button asChild className="w-full cursor-pointer" variant="outline" disabled={isLoading}>
+              <span className="text-sm">
+                Upload PDF
+              </span>
+            </Button>
+          </label>
+          <input
+            id="file-upload"
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            accept=".pdf"
+            disabled={isLoading}
+          />
+        </div>
+
+        {/* Current Session */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-2">Current Session</h3>
           {recentUploads.length > 0 ? (
@@ -113,26 +217,6 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             <p className="text-xs text-muted-foreground px-2">No document loaded.</p>
           )}
         </div>
-
-        <label htmlFor="file-upload" className="w-full">
-          <Button asChild className="w-full cursor-pointer" disabled={isLoading}>
-            <span>
-              {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
-              ) : (
-                "Upload New Document"
-              )}
-            </span>
-          </Button>
-        </label>
-        <input
-          id="file-upload"
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-          accept=".pdf"
-          disabled={isLoading}
-        />
       </div>
     </aside>
   );

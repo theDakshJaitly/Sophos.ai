@@ -86,7 +86,7 @@ export function QuizTab() {
   };
 
   const handleOptionSelect = (questionIndex: number, option: string) => {
-    if (showResults) return; // Don't allow changes after submitting
+    if (showResults) return;
 
     setSelectedAnswers(prev => ({
       ...prev,
@@ -129,7 +129,6 @@ export function QuizTab() {
         : "border-border hover:border-primary/50 hover:bg-accent";
     }
 
-    // After submission
     if (isCorrect) {
       return "border-green-500 bg-green-50 dark:bg-green-950";
     }
@@ -263,6 +262,7 @@ export function QuizTab() {
                 </CardHeader>
                 <CardContent className="text-center">
                   <Button onClick={generateQuiz} size="lg">
+                    <RefreshCw className="mr-2 h-4 w-4" />
                     Try Another Quiz
                   </Button>
                 </CardContent>

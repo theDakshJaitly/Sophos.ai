@@ -11,6 +11,8 @@ const cors_1 = __importDefault(require("cors"));
 const multer_1 = require("multer");
 const document_1 = require("./routes/document");
 const chat_1 = require("./routes/chat");
+const quiz_1 = require("./routes/quiz");
+const youtube_1 = require("./routes/youtube");
 const auth_1 = require("./middleware/auth");
 // import { projectRoutes } from './routes/projects'; // 👈 We are not using this for the MVP
 // import mongoose from 'mongoose'; // 👈 We are not using mongoose for the MVP
@@ -41,6 +43,8 @@ app.use(express_1.default.json());
 // --- ROUTES ---
 app.use('/api/documents', auth_1.authMiddleware, document_1.documentRoutes);
 app.use('/api/chat', auth_1.authMiddleware, chat_1.chatRoutes);
+app.use('/api/quiz', auth_1.authMiddleware, quiz_1.quizRoutes);
+app.use('/api/youtube', auth_1.authMiddleware, youtube_1.youtubeRoutes);
 // app.use('/api/projects', projectRoutes); // 👈 Disabled for MVP
 // --- DATABASE CONNECTION (DISABLED FOR MVP) ---
 /*

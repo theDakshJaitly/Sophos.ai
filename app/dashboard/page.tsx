@@ -6,10 +6,10 @@ import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
 import { RightPanel } from './components/RightPanel';
 import { Node, Edge } from '@xyflow/react';
+import { DashboardProvider } from './context/DashboardContext';
 
 import { supabase } from '@/lib/supabase-client';
 import { useRouter } from 'next/navigation';
-import { DashboardProvider } from './context/DashboardContext';
 
 // Define a type for our concept map data for type safety
 export interface UploadedFile {
@@ -25,6 +25,8 @@ export interface WorkflowData {
 interface InputNode {
   id: string;
   label: string;
+  description?: string;  // Brief explanation of the concept
+  source?: string;       // Excerpt from document where concept appears
   position: { x: number; y: number };
 }
 

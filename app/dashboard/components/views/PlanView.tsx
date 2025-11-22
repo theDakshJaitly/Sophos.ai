@@ -1,3 +1,6 @@
+// In app/dashboard/components/views/PlanView.tsx
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function PlanView({ data }: { data: any }) {

@@ -1,5 +1,3 @@
-// In app/dashboard/components/MainContent.tsx
-
 import { WorkflowTab } from "./tabs/WorkflowTab"
 import { ChatTab } from "./tabs/ChatTab"
 import { NotesTab } from "./tabs/NotesTab"

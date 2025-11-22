@@ -1,3 +1,6 @@
+// In app/dashboard/components/views/TimelineView.tsx
+"use client"
+
 import { Card, CardContent } from "@/components/ui/card";
 
 export function TimelineView({ data }: { data: any }) {

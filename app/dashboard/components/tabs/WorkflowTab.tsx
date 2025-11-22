@@ -1,7 +1,7 @@
 // In app/dashboard/components/tabs/WorkflowTab.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -17,6 +17,7 @@ import { getLayoutedElements } from '@/lib/layout';
 import { ViewMode } from '../LensSwitcher';
 import { TimelineView } from '../views/TimelineView';
 import { PlanView } from '../views/PlanView';
+import { NodeInfoBox } from '../NodeInfoBox';
 import { motion } from 'framer-motion';
 
 interface WorkflowTabProps {
@@ -28,14 +29,19 @@ interface WorkflowTabProps {
 export function WorkflowTab({ data, onNodeClick, viewMode }: WorkflowTabProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
+  const [selectedNode, setSelectedNode] = useState<{ id: string; label: string; description?: string; source?: string } | null>(null);
+  const [infoBoxPosition, setInfoBoxPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     if (data && data.nodes?.length) {
-      // Convert backend data to React Flow format
       const seedNodes: FlowNode[] = data.nodes.map((n) => ({
         id: n.id,
-        data: { label: n.label },
-        position: { x: 0, y: 0 }, // Will be overridden by layout
+        data: {
+          label: n.label,
+          description: n.description,
+          source: n.source,
+        },
+        position: { x: 0, y: 0 },
       }));
 
       const seedEdges: FlowEdge[] = data.edges.map((e, i) => ({
@@ -55,12 +61,34 @@ export function WorkflowTab({ data, onNodeClick, viewMode }: WorkflowTabProps) {
     }
   }, [data, setNodes, setEdges]);
 
-  const handleNodeClick = (_event: React.MouseEvent, node: FlowNode) => {
+  const handleNodeClick = (event: React.MouseEvent, node: FlowNode) => {
+    if (viewMode !== 'graph') return; // Only show info box in graph view
+
     const label = node.data.label as string;
+    const description = node.data.description as string | undefined;
+    const source = node.data.source as string | undefined;
+
     console.log('Node clicked:', label);
-    if (onNodeClick) {
-      onNodeClick(label);
+
+    // Calculate position based on click event
+    setInfoBoxPosition({ x: event.clientX, y: event.clientY });
+    setSelectedNode({ id: node.id, label, description, source });
+  };
+
+  const handleCloseInfoBox = () => {
+    setSelectedNode(null);
+  };
+
+  const handleChatAboutNode = () => {
+    if (selectedNode && onNodeClick) {
+      onNodeClick(selectedNode.label);
+      setSelectedNode(null); // Close info box
     }
+  };
+
+  const handlePaneClick = () => {
+    // Close info box when clicking on background
+    setSelectedNode(null);
   };
 
   if (!data) {
@@ -89,6 +117,7 @@ export function WorkflowTab({ data, onNodeClick, viewMode }: WorkflowTabProps) {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onNodeClick={handleNodeClick}
+              onPaneClick={handlePaneClick}
               fitView
               className="bg-gray-50 dark:bg-gray-900"
             >
@@ -96,6 +125,16 @@ export function WorkflowTab({ data, onNodeClick, viewMode }: WorkflowTabProps) {
               <MiniMap />
               <Background />
             </ReactFlow>
+
+            {/* Node Info Box */}
+            {selectedNode && (
+              <NodeInfoBox
+                node={selectedNode}
+                position={infoBoxPosition}
+                onClose={handleCloseInfoBox}
+                onChatClick={handleChatAboutNode}
+              />
+            )}
           </div>
         )}
 
