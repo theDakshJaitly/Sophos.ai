@@ -80,7 +80,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         return res.status(200).json({
           ...safeConcepts,
           timeline: timeline.events,
-          actionPlan: actionPlan.phases,
+          actionPlan: actionPlan,  // Send full object with {phases: [...]}
           documentId: existingDoc.id
         });
       }
@@ -161,7 +161,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     res.status(200).json({
       ...concepts,
       timeline: timeline.events,
-      actionPlan: actionPlan.phases,
+      actionPlan: actionPlan,  // Send full object with {phases: [...]}
       documentId: document.id
     });
 

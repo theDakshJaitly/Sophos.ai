@@ -79,7 +79,11 @@ export function MainContent({ workflowData, isLoading, currentDocumentId }: Main
 
         {activeMode === 'notes' && (
           <div className="h-full flex flex-col">
-            <NotesTab />
+            <NotesTab
+              documentId={currentDocumentId || undefined}
+              documentName="Document"
+              documentData={workflowData}
+            />
           </div>
         )}
 

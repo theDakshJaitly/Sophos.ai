@@ -82,7 +82,7 @@ router.post('/process', async (req, res) => {
             return res.status(200).json({
                 concepts: existingDoc.concepts,
                 timeline: timeline.events,
-                actionPlan: actionPlan.phases,
+                actionPlan: actionPlan,  // Send full object with {phases: [...]}
                 videoId,
                 documentId: existingDoc.id,
                 cached: true
@@ -211,7 +211,7 @@ router.post('/process', async (req, res) => {
         res.status(200).json({
             concepts,
             timeline: timeline.events,
-            actionPlan: actionPlan.phases,
+            actionPlan: actionPlan,  // Send full object with {phases: [...]}
             videoId,
             documentId: document.id,
             cached: false
