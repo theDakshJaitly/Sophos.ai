@@ -1,5 +1,38 @@
 "use strict";
 // In SophosBackEnd/src/routes/youtube.ts
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -76,14 +109,11 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
             console.log('Video already processed, returning existing concepts');
             return res.status(200).json({
                 concepts: existingDoc.concepts,
+                videoId,
                 cached: true
             });
         }
-        // In a real implementation, you would fetch the transcript here
-        // For now, we'll simulate with a placeholder
-        // You would typically use youtube-transcript library or YouTube Data API
         console.log(`Fetching transcript for video: ${videoId}`);
-        // Simulated transcript fetching (replace with actual implementation)
         const transcript = yield fetchYouTubeTranscript(videoId);
         if (!transcript) {
             return res.status(404).json({
@@ -179,19 +209,12 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
     }
 }));
 // Helper function to fetch YouTube transcript
-// NOTE: This is a placeholder. You'll need to implement actual transcript fetching
-// using libraries like 'youtube-transcript' or YouTube Data API
 function fetchYouTubeTranscript(videoId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // PLACEHOLDER IMPLEMENTATION
-            // In production, use: npm install youtube-transcript
-            // const { YoutubeTranscript } = require('youtube-transcript');
-            // const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-            // return transcript.map((entry: any) => entry.text).join(' ');
-            console.warn('YouTube transcript fetching not implemented. Using placeholder.');
-            return `This is a placeholder transcript for video ${videoId}. 
-            Please implement actual transcript fetching using youtube-transcript library.`;
+            const { YoutubeTranscript } = yield Promise.resolve().then(() => __importStar(require('youtube-transcript')));
+            const transcript = yield YoutubeTranscript.fetchTranscript(videoId);
+            return transcript.map((entry) => entry.text).join(' ');
         }
         catch (error) {
             console.error('Error fetching YouTube transcript:', error);
