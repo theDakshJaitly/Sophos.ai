@@ -25,6 +25,8 @@ export interface WorkflowData {
 interface InputNode {
   id: string;
   label: string;
+  description?: string;  // Brief explanation of the concept
+  source?: string;       // Excerpt from document where concept appears
   position: { x: number; y: number };
 }
 
