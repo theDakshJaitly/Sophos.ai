@@ -28,7 +28,11 @@ interface QuizData {
   questions: QuizQuestion[];
 }
 
-export function QuizTab() {
+interface QuizTabProps {
+  currentDocumentId: string | null;
+}
+
+export function QuizTab({ currentDocumentId }: QuizTabProps) {
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
@@ -36,6 +40,16 @@ export function QuizTab() {
   const { toast } = useToast();
 
   const generateQuiz = async () => {
+    // Check if a document has been uploaded
+    if (!currentDocumentId) {
+      toast({
+        variant: "destructive",
+        title: "No Document",
+        description: "Please upload a PDF or YouTube video first before generating a quiz.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setQuiz(null);
     setSelectedAnswers({});
@@ -51,6 +65,7 @@ export function QuizTab() {
       const response = await axios.post(
         getApiUrl('quiz/generate'),
         {
+          documentId: currentDocumentId,
           difficulty: 'medium',
           questionCount: 5
         },

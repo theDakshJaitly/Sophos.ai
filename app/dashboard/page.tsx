@@ -15,11 +15,13 @@ import { useRouter } from 'next/navigation';
 export interface UploadedFile {
   id: string;
   name: string;
+  documentId?: string; // Database document ID for quiz generation
 }
 
 export interface WorkflowData {
   nodes: InputNode[];
   edges: InputEdge[];
+  documentId?: string; // Document ID from backend
 }
 
 interface InputNode {
@@ -100,6 +102,7 @@ export default function DashboardPage() {
   const [workflowData, setWorkflowData] = useState<WorkflowData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [recentUploads, setRecentUploads] = useState<UploadedFile[]>([]);
+  const [currentDocumentId, setCurrentDocumentId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -122,10 +125,15 @@ export default function DashboardPage() {
           setIsLoading={setIsLoading}
           recentUploads={recentUploads}
           setRecentUploads={setRecentUploads}
+          setCurrentDocumentId={setCurrentDocumentId}
           isLoading={isLoading}
         />
 
-        <MainContent workflowData={workflowData} isLoading={isLoading} />
+        <MainContent
+          workflowData={workflowData}
+          isLoading={isLoading}
+          currentDocumentId={currentDocumentId}
+        />
         <RightPanel />
       </div>
     </DashboardProvider>

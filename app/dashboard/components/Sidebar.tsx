@@ -15,10 +15,11 @@ interface SidebarProps {
   setIsLoading: (isLoading: boolean) => void;
   recentUploads: UploadedFile[];
   setRecentUploads: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+  setCurrentDocumentId: React.Dispatch<React.SetStateAction<string | null>>;
   isLoading: boolean;
 }
 
-export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecentUploads, isLoading }: SidebarProps) {
+export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecentUploads, setCurrentDocumentId, isLoading }: SidebarProps) {
   const { toast } = useToast();
   const [youtubeUrl, setYoutubeUrl] = useState('');
 
@@ -47,10 +48,20 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       );
 
       setWorkflowData(response.data);
+
+      // Extract documentId from response
+      const documentId = response.data.documentId;
+
       setRecentUploads(prev => [
-        { id: new Date().toISOString(), name: file.name },
+        { id: new Date().toISOString(), name: file.name, documentId },
         ...prev
       ].slice(0, 5));
+
+      // Set this as the current active document
+      if (documentId) {
+        setCurrentDocumentId(documentId);
+      }
+
       toast({
         title: "Success!",
         description: `"${file.name}" was processed successfully.`,
@@ -103,10 +114,19 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
       );
 
       setWorkflowData(response.data.concepts);
+
+      // Extract documentId from response
+      const documentId = response.data.documentId;
+
       setRecentUploads(prev => [
-        { id: new Date().toISOString(), name: `YouTube: ${response.data.videoId}` },
+        { id: new Date().toISOString(), name: `YouTube: ${response.data.videoId}`, documentId },
         ...prev
       ].slice(0, 5));
+
+      // Set this as the current active document
+      if (documentId) {
+        setCurrentDocumentId(documentId);
+      }
 
       toast({
         title: "Success!",

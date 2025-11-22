@@ -73,6 +73,7 @@ router.post('/process', async (req, res) => {
             return res.status(200).json({
                 concepts: existingDoc.concepts,
                 videoId,
+                documentId: existingDoc.id,
                 cached: true
             });
         }
@@ -173,6 +174,7 @@ router.post('/process', async (req, res) => {
         res.status(200).json({
             concepts,
             videoId,
+            documentId: document.id,
             cached: false
         });
 

@@ -10,9 +10,10 @@ import { LensSwitcher } from "./LensSwitcher"
 interface MainContentProps {
   workflowData: WorkflowData | null;
   isLoading: boolean;
+  currentDocumentId: string | null;
 }
 
-export function MainContent({ workflowData, isLoading }: MainContentProps) {
+export function MainContent({ workflowData, isLoading, currentDocumentId }: MainContentProps) {
   const {
     setChatMessage,
     setTriggerChatSubmit,
@@ -84,7 +85,7 @@ export function MainContent({ workflowData, isLoading }: MainContentProps) {
 
         {activeMode === 'quiz' && (
           <div className="h-full flex flex-col">
-            <QuizTab />
+            <QuizTab currentDocumentId={currentDocumentId} />
           </div>
         )}
       </div>

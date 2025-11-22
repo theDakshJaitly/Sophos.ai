@@ -11,7 +11,7 @@ import { supabaseAdmin } from '../lib/supabase-admin'; // Use the admin client
 import crypto from 'crypto';
 
 const router = Router();
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }
 });
@@ -68,7 +68,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         let safeConcepts = removeNullBytes(existingDoc.concepts);
         if (!safeConcepts.nodes) safeConcepts.nodes = [];
         if (!safeConcepts.edges) safeConcepts.edges = [];
-        return res.status(200).json(safeConcepts);
+        return res.status(200).json({
+          ...safeConcepts,
+          documentId: existingDoc.id
+        });
       }
       // Fallback: Fetch the previously saved chunks (legacy)
       const { data: chunks, error: chunksError } = await supabaseAdmin
@@ -127,16 +130,19 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     console.log(`Successfully saved ${chunksToInsert.length} chunks to database.`);
 
     // 6. Return the concepts to the frontend to build the mind map.
-    res.status(200).json(concepts);
+    res.status(200).json({
+      ...concepts,
+      documentId: document.id
+    });
 
   } catch (error) {
     console.error('--- A critical error occurred in the /upload route ---');
     if (error instanceof Error) {
-        console.error('Error Name:', error.name);
-        console.error('Error Message:', error.message);
-        console.error('Stack Trace:', error.stack);
-        // Provide a specific message for known errors, or a generic one.
-        return res.status(500).json({ message: `An error occurred: ${error.message}` });
+      console.error('Error Name:', error.name);
+      console.error('Error Message:', error.message);
+      console.error('Stack Trace:', error.stack);
+      // Provide a specific message for known errors, or a generic one.
+      return res.status(500).json({ message: `An error occurred: ${error.message}` });
     }
     // Fallback for non-Error objects
     console.error('An unknown error object was thrown:', error);
