@@ -5,16 +5,19 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Brain, BookOpen, Wrench, LogOut } from "lucide-react";
+import { Upload, MessageSquare, FileText, CheckSquare, LogOut, Wrench, Network } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/lib/supabase-client';
 import { User } from '@supabase/supabase-js';
+import { useDashboard } from "../context/DashboardContext";
+import { cn } from "@/lib/utils";
 
 export function RightPanel() {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const { activeMode, setActiveMode } = useDashboard();
 
   // This effect fetches the current user's data when the component loads
   useEffect(() => {
@@ -53,45 +56,39 @@ export function RightPanel() {
   };
   // ---------------------------------------------------
 
-  const handleGenerateFlashcards = () => {
-    window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');
-  };
-
-  const handleMakeQuiz = () => {
-    window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');
-  };
-
   return (
-    <div className="w-80 bg-white p-4 flex flex-col h-full">
-      {/* 👇 NEW: User Profile Section at the top */}
-      <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold">Profile</h3>
-            <Button variant="ghost" size="icon" onClick={handleLogout} title="Log Out">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-          {user ? (
-            <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
-                {user.email?.[0].toUpperCase()}
-              </div>
-              <p className="text-sm font-medium truncate">{user.email}</p>
-            </div>
-          ) : (
-            <div className="h-[52px] bg-gray-100 rounded-lg animate-pulse"></div> // Loading skeleton
-          )}
+    <div className="w-80 bg-white border-l border-gray-200 dark:border-gray-800 flex flex-col h-full p-4">
+      {/* User Profile Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold">Profile</h3>
+          <Button variant="ghost" size="icon" onClick={handleLogout} title="Log Out">
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
+        {user ? (
+          <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+              {user.email?.[0].toUpperCase()}
+            </div>
+            <p className="text-sm font-medium truncate">{user.email}</p>
+          </div>
+        ) : (
+          <div className="h-[52px] bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"></div>
+        )}
+      </div>
 
-      {/* 👇 YOUR EXISTING TOOLS SECTION (UNCHANGED) */}
+      {/* Tools / Launchpad Section */}
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-2xl font-bold">Tools</h2>
+        <h2 className="text-2xl font-bold">Launchpad</h2>
         <Wrench className="h-6 w-6" />
       </div>
-      <Card className="mb-4">
+
+      {/* File Upload Area */}
+      <Card className="mb-6">
         <CardContent className="pt-6">
-          <div 
-            className="flex items-center justify-center h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300"
+          <div
+            className="flex items-center justify-center h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
           >
@@ -110,25 +107,45 @@ export function RightPanel() {
           </div>
         </CardContent>
       </Card>
-      <Button 
-        onClick={handleGenerateFlashcards}
-        variant="outline"
-        className="w-full mb-3 hover:bg-blue-50 hover:border-blue-200"
-      >
-        <Brain className="mr-2 h-4 w-4" />
-        Generate Flashcards
-      </Button>
-      <Button 
-        onClick={handleMakeQuiz}
-        variant="outline"
-        className="w-full hover:bg-green-50 hover:border-green-200"
-      >
-        <BookOpen className="mr-2 h-4 w-4" />
-        Make Quiz
-      </Button>
 
-      {/* 👇 YOUR EXISTING FOOTER (UNCHANGED) */}
-      <div className="mt-auto pt-4 border-t border-gray-200">
+      {/* Navigation Buttons */}
+      <div className="space-y-2 flex-1">
+        <Button
+          variant={activeMode === 'workflow' ? "secondary" : "ghost"}
+          className={cn("w-full justify-start", activeMode === 'workflow' && "bg-gray-100 dark:bg-gray-800")}
+          onClick={() => setActiveMode('workflow')}
+        >
+          <Network className="mr-2 h-4 w-4" />
+          Workflow
+        </Button>
+        <Button
+          variant={activeMode === 'chat' ? "secondary" : "ghost"}
+          className={cn("w-full justify-start", activeMode === 'chat' && "bg-gray-100 dark:bg-gray-800")}
+          onClick={() => setActiveMode('chat')}
+        >
+          <MessageSquare className="mr-2 h-4 w-4" />
+          Chat
+        </Button>
+        <Button
+          variant={activeMode === 'notes' ? "secondary" : "ghost"}
+          className={cn("w-full justify-start", activeMode === 'notes' && "bg-gray-100 dark:bg-gray-800")}
+          onClick={() => setActiveMode('notes')}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          Notes
+        </Button>
+        <Button
+          variant={activeMode === 'quiz' ? "secondary" : "ghost"}
+          className={cn("w-full justify-start", activeMode === 'quiz' && "bg-gray-100 dark:bg-gray-800")}
+          onClick={() => setActiveMode('quiz')}
+        >
+          <CheckSquare className="mr-2 h-4 w-4" />
+          Quiz
+        </Button>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
         <div className="text-center">
           <p className="text-xs text-gray-400 font-medium">
             DJ Productions

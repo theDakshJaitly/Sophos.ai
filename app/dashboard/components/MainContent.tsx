@@ -1,12 +1,13 @@
 // In app/dashboard/components/MainContent.tsx
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WorkflowTab } from "./tabs/WorkflowTab"
 import { ChatTab } from "./tabs/ChatTab"
 import { NotesTab } from "./tabs/NotesTab"
 import { QuizTab } from "./tabs/QuizTab"
 import { Loader2 } from "lucide-react"
 import { WorkflowData } from "../page"
+import { useDashboard } from "../context/DashboardContext"
+import { LensSwitcher } from "./LensSwitcher"
 
 interface MainContentProps {
   workflowData: WorkflowData | null;
@@ -14,6 +15,28 @@ interface MainContentProps {
 }
 
 export function MainContent({ workflowData, isLoading }: MainContentProps) {
+  const {
+    setChatMessage,
+    setTriggerChatSubmit,
+    activeMode,
+    setActiveMode,
+    workflowSubView,
+    setWorkflowSubView
+  } = useDashboard();
+
+  const handleNodeClick = (nodeLabel: string) => {
+    // Set the chat message
+    setChatMessage(`Tell me more about ${nodeLabel}`);
+
+    // Switch to chat mode
+    setActiveMode('chat');
+
+    // Trigger submit after a brief delay to ensure mode switch completes
+    setTimeout(() => {
+      setTriggerChatSubmit(true);
+    }, 100);
+  };
+
   if (isLoading) {
     return (
       <main className="flex-1 p-6 flex flex-col items-center justify-center">
@@ -30,28 +53,43 @@ export function MainContent({ workflowData, isLoading }: MainContentProps) {
 
   return (
     <main className="flex-1 p-6 flex flex-col min-h-0">
-      <Tabs defaultValue="workflow" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="flex-shrink-0">
-          <TabsTrigger value="workflow">Workflow</TabsTrigger>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="quiz">Quiz</TabsTrigger>
-        </TabsList>
+      {/* Top Header: Workflow Switcher (Only visible in Workflow mode) */}
+      <div className="flex items-center justify-between mb-6 h-12">
+        <h1 className="text-2xl font-bold capitalize">{activeMode}</h1>
 
-        <TabsContent value="workflow" className="flex-1 min-h-0">
-          <WorkflowTab data={workflowData} />
-        </TabsContent>
-        <TabsContent value="chat" className="flex-1 min-h-0">
-          <ChatTab />
-        </TabsContent>
-        <TabsContent value="notes" className="flex-1 min-h-0">
-          <NotesTab />
-        </TabsContent>
-        <TabsContent value="quiz" className="flex-1 min-h-0">
-          <QuizTab />
-        </TabsContent>
-      </Tabs>
+        {activeMode === 'workflow' && (
+          <LensSwitcher viewMode={workflowSubView} setViewMode={setWorkflowSubView} />
+        )}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 min-h-0 border rounded-lg bg-white dark:bg-gray-900 shadow-sm overflow-hidden relative">
+        {activeMode === 'workflow' && (
+          <WorkflowTab
+            data={workflowData}
+            onNodeClick={handleNodeClick}
+            viewMode={workflowSubView}
+          />
+        )}
+
+        {activeMode === 'chat' && (
+          <div className="h-full flex flex-col">
+            <ChatTab />
+          </div>
+        )}
+
+        {activeMode === 'notes' && (
+          <div className="h-full flex flex-col">
+            <NotesTab />
+          </div>
+        )}
+
+        {activeMode === 'quiz' && (
+          <div className="h-full flex flex-col">
+            <QuizTab />
+          </div>
+        )}
+      </div>
     </main>
   )
 }
-

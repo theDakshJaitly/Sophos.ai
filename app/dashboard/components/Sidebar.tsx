@@ -5,7 +5,8 @@ import { UploadedFile } from "../page";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase-client'; // Make sure Supabase is imported
+import { supabase } from '@/lib/supabase-client';
+import { getApiUrl } from '@/lib/api';
 
 interface SidebarProps {
   setWorkflowData: (data: any) => void;
@@ -43,7 +44,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       // 2. Make the authenticated API call with the correctly formatted headers
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/documents/upload`,
+        getApiUrl('documents/upload'),
         formData,
         { headers }
       );

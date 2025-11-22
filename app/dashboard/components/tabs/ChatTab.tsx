@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { chatApi } from '@/utils/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,6 +9,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SendHorizonal, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase-client';
+import { useDashboard } from '../../context/DashboardContext';
+import axios from 'axios';
+import { getApiUrl } from '@/lib/api';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -22,6 +24,25 @@ export function ChatTab() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { chatMessage, setChatMessage, triggerChatSubmit, setTriggerChatSubmit } = useDashboard();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Sync input with context
+  useEffect(() => {
+    if (chatMessage) {
+      setInput(chatMessage);
+    }
+  }, [chatMessage]);
+
+  // Auto-submit when triggered
+  useEffect(() => {
+    if (triggerChatSubmit) {
+      setTriggerChatSubmit(false);
+      if (formRef.current && input.trim()) {
+        formRef.current.requestSubmit();
+      }
+    }
+  }, [triggerChatSubmit, input, setTriggerChatSubmit]);
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -43,33 +64,37 @@ export function ChatTab() {
     setIsLoading(true);
 
     try {
-
       const { data: { session } } = await supabase.auth.getSession();
-  
+
       if (!session) {
         throw new Error("User not authenticated");
       }
 
+      // Use axios directly to ensure Authorization header is sent and URL is correct
+      const response = await axios.post(
+        getApiUrl('chat'),
+        { message: input },
+        {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        }
+      );
 
-
-      // Use chatApi to ensure Authorization header is sent
-      const response = await chatApi.sendMessage('', input); // Pass projectId if needed, else empty string
-      
       const assistantMessage: Message = { role: 'assistant', content: response.data.answer };
       setMessages((prev) => [...prev, assistantMessage]);
 
     } catch (error) {
-      // Handle error from chatApi (axios instance)
       let errorMessageContent = "Sorry, I ran into an error. Please try again.";
       if (error && typeof error === 'object' &&
-          'isAxiosError' in error &&
-          (error as any).isAxiosError &&
-          (error as any).response &&
-          (error as any).response.data &&
-          (error as any).response.data.message) {
+        'isAxiosError' in error &&
+        (error as any).isAxiosError &&
+        (error as any).response &&
+        (error as any).response.data &&
+        (error as any).response.data.message) {
         errorMessageContent = (error as any).response.data.message;
       }
-      
+
       setMessages((prev) => [...prev, { role: 'assistant', content: errorMessageContent }]);
 
       toast({
@@ -89,7 +114,7 @@ export function ChatTab() {
         <h2 className="text-xl font-semibold">Chat with your Documents</h2>
         <p className="text-sm text-muted-foreground">Ask anything about the content of your uploaded PDFs.</p>
       </div>
-      
+
       {/* Scrollable messages area */}
       <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
         <div className="p-4 space-y-4">
@@ -98,10 +123,9 @@ export function ChatTab() {
               <Avatar className="w-8 h-8 flex-shrink-0">
                 <AvatarFallback>{msg.role === 'user' ? 'U' : 'AI'}</AvatarFallback>
               </Avatar>
-              <div className={`rounded-lg p-3 max-w-[70%] break-words ${
-                  msg.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+              <div className={`rounded-lg p-3 max-w-[70%] break-words ${msg.role === 'user'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -121,10 +145,10 @@ export function ChatTab() {
           )}
         </div>
       </ScrollArea>
-      
+
       {/* Fixed input area */}
       <div className="flex-shrink-0 p-4 border-t bg-background">
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}

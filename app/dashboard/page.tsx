@@ -9,6 +9,7 @@ import { Node, Edge } from '@xyflow/react';
 
 import { supabase } from '@/lib/supabase-client';
 import { useRouter } from 'next/navigation';
+import { DashboardProvider } from './context/DashboardContext';
 
 // Define a type for our concept map data for type safety
 export interface UploadedFile {
@@ -69,7 +70,7 @@ export default function DashboardPage() {
           // Remove fragment so it isn't visible/processed again
           try {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          } catch {}
+          } catch { }
         } else {
           // No fragment token present; fallback to reading the Supabase client session
           supabase.auth.getSession().then(({ data: { session } }) => {
@@ -112,17 +113,19 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      <Sidebar 
-        setWorkflowData={setWorkflowData}
-        setIsLoading={setIsLoading}
-        recentUploads={recentUploads}
-        setRecentUploads={setRecentUploads}
-        isLoading={isLoading}
-      />
-       
-      <MainContent workflowData={workflowData} isLoading={isLoading} />
-      <RightPanel />
-    </div>
+    <DashboardProvider>
+      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+        <Sidebar
+          setWorkflowData={setWorkflowData}
+          setIsLoading={setIsLoading}
+          recentUploads={recentUploads}
+          setRecentUploads={setRecentUploads}
+          isLoading={isLoading}
+        />
+
+        <MainContent workflowData={workflowData} isLoading={isLoading} />
+        <RightPanel />
+      </div>
+    </DashboardProvider>
   );
 }
