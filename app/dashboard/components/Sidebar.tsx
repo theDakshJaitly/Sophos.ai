@@ -106,7 +106,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       const response = await axios.post(
         getApiUrl('youtube/process'),
-        { youtubeUrl },
+        { url: youtubeUrl },  // Backend expects 'url', not 'youtubeUrl'
         {
           headers: {
             'Authorization': `Bearer ${session.access_token}`

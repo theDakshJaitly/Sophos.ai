@@ -1,31 +1,78 @@
+'use client';
+
 import Link from "next/link"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronRight, FileText, PenTool, Search, Share2, Zap, Users, Users2, Store } from "lucide-react"
+import { ChevronRight, FileText, PenTool, Search, Share2, Users2, Store, Mail, Linkedin, Twitter, Facebook, Instagram } from "lucide-react"
 import { WaveBackground } from "@/components/ui/wave-background"
 import { Analytics } from "@vercel/analytics/next"
 
 export default function Home() {
+  const [showPricingTooltip, setShowPricingTooltip] = useState(false);
+
+  const handlePricingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowPricingTooltip(true);
+    setTimeout(() => setShowPricingTooltip(false), 5000);
+  };
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="w-full border-b">
-        <div className="px-4 lg:px-6 h-14 flex items-center justify-between max-w-7xl mx-auto w-full">
-          <div className="flex items-center gap-2 w-[200px]">
-            <Zap className="h-6 w-6" />
-            <span className="text-sm font-medium">Daksh Jaitly</span>
+      {/* Navbar */}
+      <header className="w-full border-b bg-white sticky top-0 z-50">
+        <div className="px-4 lg:px-6 h-16 flex items-center justify-between max-w-7xl mx-auto w-full">
+          {/* Logo - Far Left */}
+          <div>
+            <h1 className="text-3xl font-bold text-black">Sophos.ai</h1>
           </div>
-          <div className="flex-1 flex items-center justify-center hover:underlien underline-offset-4">
-            <h1 className="text-xl font-bold">Sophos.ai</h1>
-          </div>
-          <nav className="flex gap-4 sm:gap-6 w-[200px] justify-end">
-            <a className="text-sm font-medium hover:underline underline-offset-4" href="#">Features</a>
-            <a className="text-sm font-medium hover:underline underline-offset-4" href="#">Pricing</a>
-            <a className="text-sm font-medium hover:underline underline-offset-4" href="#">About</a>
-            <a className="text-sm font-medium hover:underline underline-offset-4" href="#">Contact</a>
+
+          {/* Navigation Links - Right */}
+          <nav className="flex gap-6 items-center relative">
+            <button
+              onClick={() => scrollToSection('about')}
+              className="text-base font-medium hover:text-primary transition-colors cursor-pointer"
+            >
+              About
+            </button>
+            <button
+              onClick={() => scrollToSection('features')}
+              className="text-base font-medium hover:text-primary transition-colors cursor-pointer"
+            >
+              Features
+            </button>
+            <div className="relative">
+              <button
+                onClick={handlePricingClick}
+                className="text-base font-medium hover:text-primary transition-colors cursor-pointer"
+              >
+                Pricing
+              </button>
+              {showPricingTooltip && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-4 py-2 bg-white border-2 border-blue-500 text-black text-sm rounded-lg shadow-xl whitespace-nowrap animate-in fade-in slide-in-from-top-2 z-50">
+                  It's free for now Fellas! 🎉
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-[-2px]">
+                    <div className="border-[6px] border-transparent border-b-blue-500"></div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => scrollToSection('contact')}
+              className="text-base font-medium hover:text-primary transition-colors cursor-pointer"
+            >
+              Contact
+            </button>
           </nav>
         </div>
       </header>
+
       <main className="flex-1">
+        {/* Hero Section */}
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 relative">
           <WaveBackground />
           <div className="container px-4 md:px-6 max-w-7xl mx-auto relative">
@@ -39,16 +86,29 @@ export default function Home() {
                   research.
                 </p>
               </div>
-              <div className="space-x-4">
-                <Button asChild>
+              <div className="flex justify-center">
+                <Button asChild size="lg">
                   <Link href="/login">Get Started</Link>
                 </Button>
-                <Button variant="outline">Learn More</Button>
               </div>
             </div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
+
+        {/* About Section - NEW */}
+        <section id="about" className="w-full py-12 md:py-24 lg:py-32 bg-white">
+          <div className="container px-4 md:px-6 max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-6">
+              Transforming static pages into living knowledge.
+            </h2>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              We believe that reading shouldn't be a passive activity. Sophos.ai was built to bridge the gap between raw documents and deep understanding. By combining advanced extraction with semantic mapping, we turn your PDFs into interactive study partners, not just digital paper.
+            </p>
+          </div>
+        </section>
+
+        {/* Key Features */}
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
           <div className="container px-4 md:px-6 max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">Key Features</h2>
             <div className="grid gap-6 lg:grid-cols-3 lg:gap-12">
@@ -83,6 +143,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* How It Works */}
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6 max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">How It Works</h2>
@@ -118,6 +180,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Future Enhancements */}
         <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
           <div className="container px-4 md:px-6 max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">Future Enhancements</h2>
@@ -153,7 +217,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Connect with friends, classmated, and colleagues to collaborate on document analysis and research
+                    Connect with friends, classmates, and colleagues to collaborate on document analysis and research.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -171,22 +235,89 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Get In Touch / Contact Section - NEW */}
+        <section id="contact" className="w-full py-12 md:py-24 lg:py-32 bg-white">
+          <div className="container px-4 md:px-6 max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">
+                Get In Touch
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Have questions? We'd love to hear from you. Connect with us on social media or send us an email.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+              {/* Email Card */}
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500">
+                      <Mail className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-600 mb-1">Email</p>
+                      <a
+                        href="mailto:contact@sophos.ai"
+                        className="text-base font-medium hover:text-primary transition-colors"
+                      >
+                        contact@sophos.ai
+                      </a>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Socials Card */}
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500">
+                      <Linkedin className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-600 mb-1">LinkedIn</p>
+                      <a
+                        href="https://linkedin.com/company/sophos-ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-base font-medium hover:text-primary transition-colors"
+                      >
+                        /company/sophos-ai
+                      </a>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
+                        <Facebook className="h-5 w-5 text-white" />
+                      </button>
+                      <button className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
+                        <Instagram className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
       </main>
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between">
-          <p className="text-xs text-gray-500 dark:text-gray-400">A Daksh Jaitly Production</p>
-          <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-            <a className="text-xs hover:underline underline-offset-4" href="#">
-              Terms of Service
-            </a>
-            <a className="text-xs hover:underline underline-offset-4" href="#">
-              Privacy
-            </a>
-          </nav>
+
+      {/* Footer */}
+      <footer className="w-full bg-slate-900 text-white py-8">
+        <div className="container px-4 md:px-6 max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold">Sophos.ai</h3>
+            </div>
+            <p className="text-sm text-gray-400">
+              © 2025 Sophos.ai. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
+
       <Analytics />
     </div>
   )
 }
-

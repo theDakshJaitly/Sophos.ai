@@ -132,10 +132,14 @@ router.post('/process', async (req, res) => {
             throw new Error('Failed to generate concepts from transcript.');
         }
 
+        console.log('Raw concepts JSON from AI:', conceptsJson.substring(0, 200));
         const concepts = JSON.parse(conceptsJson);
 
         // Ensure proper structure
         if (!concepts.nodes) concepts.nodes = [];
+        if (!concepts.edges) concepts.edges = [];
+
+        console.log(`Generated ${concepts.nodes.length} nodes and ${concepts.edges.length} edges`);
         if (!concepts.edges) concepts.edges = [];
 
         // Extract timeline events from transcript
@@ -225,11 +229,25 @@ router.post('/process', async (req, res) => {
 // Helper function to fetch YouTube transcript
 async function fetchYouTubeTranscript(videoId: string): Promise<string | null> {
     try {
+        console.log(`Attempting to fetch transcript for video: ${videoId}`);
+
         const { YoutubeTranscript } = await import('youtube-transcript');
-        const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-        return transcript.map((entry: any) => entry.text).join(' ');
-    } catch (error) {
+        const transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
+
+        if (!transcriptData || transcriptData.length === 0) {
+            console.error('No transcript data returned');
+            return null;
+        }
+
+        const fullText = transcriptData.map((item: any) => item.text).join(' ');
+
+        console.log(`Successfully fetched transcript (${fullText.length} characters)`);
+        console.log(`First 200 chars: ${fullText.substring(0, 200)}`);
+        return fullText;
+
+    } catch (error: any) {
         console.error('Error fetching YouTube transcript:', error);
+        console.error('Error message:', error.message);
         return null;
     }
 }
