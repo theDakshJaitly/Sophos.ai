@@ -72,17 +72,12 @@ router.post('/process', async (req, res) => {
             console.log('Video already processed, returning existing concepts');
             return res.status(200).json({
                 concepts: existingDoc.concepts,
+                videoId,
                 cached: true
             });
         }
 
-        // In a real implementation, you would fetch the transcript here
-        // For now, we'll simulate with a placeholder
-        // You would typically use youtube-transcript library or YouTube Data API
-
         console.log(`Fetching transcript for video: ${videoId}`);
-
-        // Simulated transcript fetching (replace with actual implementation)
         const transcript = await fetchYouTubeTranscript(videoId);
 
         if (!transcript) {
@@ -191,19 +186,11 @@ router.post('/process', async (req, res) => {
 });
 
 // Helper function to fetch YouTube transcript
-// NOTE: This is a placeholder. You'll need to implement actual transcript fetching
-// using libraries like 'youtube-transcript' or YouTube Data API
 async function fetchYouTubeTranscript(videoId: string): Promise<string | null> {
     try {
-        // PLACEHOLDER IMPLEMENTATION
-        // In production, use: npm install youtube-transcript
-        // const { YoutubeTranscript } = require('youtube-transcript');
-        // const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-        // return transcript.map((entry: any) => entry.text).join(' ');
-
-        console.warn('YouTube transcript fetching not implemented. Using placeholder.');
-        return `This is a placeholder transcript for video ${videoId}. 
-            Please implement actual transcript fetching using youtube-transcript library.`;
+        const { YoutubeTranscript } = await import('youtube-transcript');
+        const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+        return transcript.map((entry: any) => entry.text).join(' ');
     } catch (error) {
         console.error('Error fetching YouTube transcript:', error);
         return null;
