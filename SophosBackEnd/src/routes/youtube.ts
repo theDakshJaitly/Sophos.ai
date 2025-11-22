@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 import { getSupabaseClients, hasSupabaseConfig } from '../lib/supabase';
-import { createEmbedding } from '../services/ai';
+import { createEmbedding, extractTimelineEvents } from '../services/ai';
 import Groq from 'groq-sdk';
 import crypto from 'crypto';
 
@@ -58,7 +58,7 @@ router.post('/process', async (req, res) => {
         // Check if already processed
         const { data: existingDoc, error: findError } = await supabase
             .from('documents')
-            .select('id, concepts')
+            .select('id, concepts, timeline')
             .eq('user_id', userId)
             .eq('file_hash', hash)
             .maybeSingle();
@@ -70,8 +70,14 @@ router.post('/process', async (req, res) => {
 
         if (existingDoc && existingDoc.concepts) {
             console.log('Video already processed, returning existing concepts');
+
+            // Ensure timeline structure
+            let timeline = existingDoc.timeline || { events: [] };
+            if (!timeline.events) timeline = { events: [] };
+
             return res.status(200).json({
                 concepts: existingDoc.concepts,
+                timeline: timeline.events,
                 videoId,
                 documentId: existingDoc.id,
                 cached: true
@@ -127,6 +133,16 @@ router.post('/process', async (req, res) => {
         if (!concepts.nodes) concepts.nodes = [];
         if (!concepts.edges) concepts.edges = [];
 
+        // Extract timeline events from transcript
+        console.log('Extracting timeline events from transcript...');
+        const timeline = await extractTimelineEvents(transcript.substring(0, 15000));
+        console.log('Timeline events extracted successfully.');
+
+        // Ensure timeline structure
+        if (!timeline || !timeline.events) {
+            timeline.events = [];
+        }
+
         // Create chunks for semantic search
         const chunks = chunkText(transcript, 500);
         const chunksWithEmbeddings = await Promise.all(
@@ -143,7 +159,8 @@ router.post('/process', async (req, res) => {
                 user_id: userId,
                 file_name: `YouTube: ${videoId}`,
                 file_hash: hash,
-                concepts
+                concepts,
+                timeline
             })
             .select('id')
             .single();
@@ -173,6 +190,7 @@ router.post('/process', async (req, res) => {
 
         res.status(200).json({
             concepts,
+            timeline: timeline.events,
             videoId,
             documentId: document.id,
             cached: false

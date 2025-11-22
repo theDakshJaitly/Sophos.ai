@@ -53,7 +53,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     // 2. Check for duplicate by hash and user_id
     const { data: existingDoc, error: findError } = await supabaseAdmin
       .from('documents')
-      .select('id, concepts')
+      .select('id, concepts, timeline')
       .eq('user_id', userId)
       .eq('file_hash', hash)
       .maybeSingle();
@@ -68,8 +68,14 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         let safeConcepts = removeNullBytes(existingDoc.concepts);
         if (!safeConcepts.nodes) safeConcepts.nodes = [];
         if (!safeConcepts.edges) safeConcepts.edges = [];
+
+        // Ensure timeline structure
+        let timeline = existingDoc.timeline || { events: [] };
+        if (!timeline.events) timeline = { events: [] };
+
         return res.status(200).json({
           ...safeConcepts,
+          timeline: timeline.events,
           documentId: existingDoc.id
         });
       }
@@ -94,17 +100,28 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
 
     // 3. Process the PDF to get concepts and chunks.
-    let { concepts, chunks } = await processPdf(fileBuffer);
+    let { concepts, timeline, chunks } = await processPdf(fileBuffer);
     // Remove null bytes from concepts before saving
     concepts = removeNullBytes(concepts);
     // Always ensure both nodes and edges are present and are arrays
     if (!concepts.nodes) concepts.nodes = [];
     if (!concepts.edges) concepts.edges = [];
 
-    // 4. Insert the main document record into the database, including file_hash and sanitized concepts
+    // Ensure timeline has proper structure
+    if (!timeline || !timeline.events) {
+      timeline = { events: [] };
+    }
+
+    // 4. Insert the main document record into the database, including file_hash, concepts, and timeline
     const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
-      .insert({ user_id: userId, file_name: req.file.originalname, file_hash: hash, concepts })
+      .insert({
+        user_id: userId,
+        file_name: req.file.originalname,
+        file_hash: hash,
+        concepts,
+        timeline
+      })
       .select('id')
       .single();
 
@@ -129,9 +146,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
     console.log(`Successfully saved ${chunksToInsert.length} chunks to database.`);
 
-    // 6. Return the concepts to the frontend to build the mind map.
+    // 6. Return the concepts and timeline to the frontend to build the mind map and timeline.
     res.status(200).json({
       ...concepts,
+      timeline: timeline.events,
       documentId: document.id
     });
 

@@ -97,6 +97,92 @@ export async function extractConcepts(text: string) {
   return parsed;
 }
 
+// Extract timeline events from document text
+export async function extractTimelineEvents(text: string) {
+  const prompt = `
+    You are an expert at extracting chronological events from documents.
+    Analyze this text and identify key events, occurrences, or milestones in the order they happened.
+    
+    RULES FOR EVENT EXTRACTION:
+    1. **Sequence**: Number events in the order they occur (1, 2, 3...)
+    2. **Date**: Extract ONLY if explicitly mentioned (format: YYYY-MM-DD, YYYY-MM, or YYYY)
+       - If no date is mentioned, leave as null
+    3. **Title**: Brief event name (5-8 words maximum)
+    4. **Description**: What happened (1-2 sentences, clear and concise)
+    5. **Entities**: People, organizations, places, or things involved (array of strings)
+    6. **Category**: Group related events (e.g., "Investigation", "Financial", "Personal", "Legal", "Product")
+       - Look for thematic patterns to create logical categories
+       - Use consistent category names for related events
+    7. **Importance**: Rate significance as "low", "medium", or "high"
+    
+    TEMPORAL INDICATORS TO LOOK FOR:
+    - Explicit dates: "On January 15, 2020", "in 2019", "March 2021"
+    - Sequential: "first", "then", "after", "before", "later", "meanwhile", "subsequently", "finally"
+    - Relative time: "the next day", "a week later", "previously"
+    
+    IMPORTANT:
+    - Only extract actual events, not general statements or definitions
+    - Minimum 3 events, maximum 20 events
+    - Events should be substantial and meaningful to the narrative
+    - If the document has no clear temporal progression, extract key points in logical order
+    
+    OUTPUT FORMAT (JSON only):
+    {
+      "events": [
+        {
+          "id": "evt_1",
+          "sequence": 1,
+          "date": "2020-01-15" or null,
+          "title": "Brief event title",
+          "description": "Clear description of what happened in 1-2 sentences.",
+          "entities": ["Person A", "Company B", "Location C"],
+          "category": "Investigation",
+          "importance": "high"
+        }
+      ]
+    }
+    
+    Text to analyze:
+    ---
+    ${text}
+    ---
+    
+    Output ONLY valid JSON, nothing else.
+  `;
+
+  const chatCompletion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: 'llama-3.1-8b-instant',
+    temperature: 0.3,
+    response_format: { type: 'json_object' }
+  });
+
+  const jsonResponse = chatCompletion.choices[0]?.message?.content;
+  console.log('Raw LLM response for timeline:', jsonResponse);
+
+  if (!jsonResponse) {
+    throw new Error('Groq API returned an empty response for timeline events.');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonResponse);
+  } catch (e) {
+    console.error('Failed to parse LLM timeline JSON:', jsonResponse);
+    throw e;
+  }
+
+  console.log('Parsed timeline events:', parsed);
+
+  // Validate and ensure proper structure
+  if (!parsed.events || !Array.isArray(parsed.events)) {
+    console.warn('No events array found, returning empty timeline');
+    return { events: [] };
+  }
+
+  return parsed;
+}
+
 // This function uses Groq for the chat - NO CHANGES NEEDED
 export async function generateChatResponse(prompt: string): Promise<string> {
   // ... your existing code for this function is perfect.
