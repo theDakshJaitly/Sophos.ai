@@ -24,11 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* Dev-only auth token injector: run before interactive so local dev API token
+            is available for client requests. Keep only the script string inside
+            <Script> — don't render React children into the script tag. */}
         <Script id="dev-auth-token" strategy="beforeInteractive">
-        {children}
-        <Toaster /> 
-        <Analytics />
-        
 {`
 try {
   if (typeof window !== 'undefined') {
@@ -45,6 +44,10 @@ try {
 } catch {}
 `}
         </Script>
+
+        {/* App UI */}
+        <Toaster />
+        <Analytics />
         {children}
       </body>
     </html>
