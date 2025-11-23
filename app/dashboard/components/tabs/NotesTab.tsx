@@ -2,132 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { BookOpen, Lightbulb, Hash } from 'lucide-react';
 
 interface NotesTabProps {
   documentId?: string;
   documentName?: string;
-  documentData?: any; // The full workflow data with concepts, timeline, actionPlan
+  documentData?: any;
 }
 
 export function NotesTab({ documentId, documentName, documentData }: NotesTabProps) {
-  const [notes, setNotes] = useState('');
-  const STORAGE_KEY = `sophos_notes_${documentId || 'default'}`;
-
-  // Load notes from sessionStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined' && documentId) {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setNotes(stored);
-      } else {
-        // Auto-generate notes from document data
-        setNotes(generateNotesFromData(documentName || 'Document', documentData));
-      }
-    }
-  }, [documentId, STORAGE_KEY, documentName, documentData]);
-
-  // Save notes to sessionStorage whenever they change
-  useEffect(() => {
-    if (typeof window !== 'undefined' && documentId && notes) {
-      sessionStorage.setItem(STORAGE_KEY, notes);
-    }
-  }, [notes, documentId, STORAGE_KEY]);
-
-  const generateNotesFromData = (docName: string, data: any) => {
-    let notesContent = `# Notes for ${docName}\n\n`;
-
-    // Main Topics from concepts
-    notesContent += `## 📚 Main Topics\n`;
-    if (data?.nodes && data.nodes.length > 0) {
-      const topNodes = data.nodes.slice(0, 5); // Get first 5 main topics
-      topNodes.forEach((node: any) => {
-        notesContent += `- **${node.label}**`;
-        if (node.description) {
-          notesContent += `: ${node.description}`;
-        }
-        notesContent += `\n`;
-      });
-    } else {
-      notesContent += `- No topics extracted yet\n`;
-    }
-
-    notesContent += `\n`;
-
-    // Key Concepts with definitions
-    notesContent += `## 💡 Key Concepts\n`;
-    if (data?.nodes && data.nodes.length > 0) {
-      const conceptNodes = data.nodes.slice(0, 8); // Get first 8 concepts
-      conceptNodes.forEach((node: any) => {
-        notesContent += `**${node.label}**`;
-        if (node.description) {
-          notesContent += `: ${node.description}`;
-        } else {
-          notesContent += `: [Key concept from document]`;
-        }
-        notesContent += `\n\n`;
-      });
-    } else {
-      notesContent += `No concepts extracted yet\n\n`;
-    }
-
-    // Important Points from action plan
-    notesContent += `## 📝 Important Points\n`;
-    if (data?.actionPlan?.phases && data.actionPlan.phases.length > 0) {
-      data.actionPlan.phases.forEach((phase: any) => {
-        notesContent += `- **${phase.title}**: ${phase.description || ''}\n`;
-      });
-    } else if (data?.timeline && data.timeline.length > 0) {
-      // Use timeline events if no action plan
-      data.timeline.slice(0, 5).forEach((event: any) => {
-        notesContent += `- ${event.title || event.description}\n`;
-      });
-    } else {
-      notesContent += `- No key points extracted yet\n`;
-    }
-
-    notesContent += `\n`;
-
-    // Questions section (empty for user to fill)
-    notesContent += `## ❓ Questions\n`;
-    notesContent += `- \n`;
-    notesContent += `- \n\n`;
-
-    // Summary
-    notesContent += `## 📌 Summary\n`;
-    if (data?.actionPlan?.phases && data.actionPlan.phases.length > 0) {
-      notesContent += `This document covers ${data.actionPlan.phases.length} main phases: `;
-      notesContent += data.actionPlan.phases.map((p: any) => p.title).join(', ');
-      notesContent += `.`;
-    } else if (data?.nodes && data.nodes.length > 0) {
-      notesContent += `This document contains ${data.nodes.length} key concepts `;
-      notesContent += `including ${data.nodes.slice(0, 3).map((n: any) => n.label).join(', ')}`;
-      if (data.nodes.length > 3) {
-        notesContent += ` and ${data.nodes.length - 3} more`;
-      }
-      notesContent += `.`;
-    } else {
-      notesContent += `[Auto-generated summary will appear here once document is processed]`;
-    }
-
-    return notesContent;
-  };
-
   if (!documentId) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center text-muted-foreground">
           <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-sm">Upload a document to start taking notes</p>
+          <p className="text-sm">Upload a document to start viewing notes</p>
         </div>
       </div>
     );
   }
 
+  // Extract data for display
+  const topics = documentData?.nodes?.slice(0, 5) || [];
+  const concepts = documentData?.nodes?.slice(0, 8) || [];
+  const phases = documentData?.actionPlan?.phases || [];
+  const timelineEvents = documentData?.timeline?.slice(0, 5) || [];
+
   return (
-    <div className="h-full flex flex-col p-4 gap-4">
-      {/* Header Info Cards */}
+    <div className="h-full overflow-auto p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold mb-2">📝 Notes for {documentName}</h2>
+        <p className="text-sm text-muted-foreground">Auto-generated from your document</p>
+      </div>
+
+      {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Card className="backdrop-blur-lg bg-white/5 dark:bg-gray-900/10 border-white/10 dark:border-gray-700/20">
           <CardHeader className="pb-2">
@@ -137,9 +46,8 @@ export function NotesTab({ documentId, documentName, documentData }: NotesTabPro
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {documentData?.nodes?.length || 0} topics extracted
-            </p>
+            <p className="text-lg font-semibold">{topics.length}</p>
+            <p className="text-xs text-muted-foreground">extracted</p>
           </CardContent>
         </Card>
 
@@ -151,9 +59,8 @@ export function NotesTab({ documentId, documentName, documentData }: NotesTabPro
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {documentData?.nodes?.length || 0} key concepts
-            </p>
+            <p className="text-lg font-semibold">{concepts.length}</p>
+            <p className="text-xs text-muted-foreground">key concepts</p>
           </CardContent>
         </Card>
 
@@ -165,35 +72,133 @@ export function NotesTab({ documentId, documentName, documentData }: NotesTabPro
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {documentData?.actionPlan?.phases?.length || 0} action phases
-            </p>
+            <p className="text-lg font-semibold">{phases.length}</p>
+            <p className="text-xs text-muted-foreground">action phases</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Notes Editor */}
-      <Card className="flex-1 backdrop-blur-lg bg-white/5 dark:bg-gray-900/10 border-white/10 dark:border-gray-700/20 flex flex-col">
+      {/* Main Topics Section */}
+      <Card className="backdrop-blur-lg bg-white/5 dark:bg-gray-900/10 border-white/10 dark:border-gray-700/20">
         <CardHeader>
-          <CardTitle className="text-sm font-semibold">📝 Your Notes</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Auto-generated from document. Edit as needed - saves automatically!
-          </p>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Main Topics
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col">
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Start taking notes..."
-            className="flex-1 min-h-[400px] font-mono text-sm resize-none
-              bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
+        <CardContent>
+          {topics.length > 0 ? (
+            <ul className="space-y-2">
+              {topics.map((node: any, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span>
+                  <div>
+                    <strong className="font-semibold">{node.label}</strong>
+                    {node.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5">{node.description}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No topics extracted yet</p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Footer Hint */}
-      <p className="text-xs text-muted-foreground text-center">
-        💡 Tip: Notes are stored in your browser session and will clear when you close the tab
+      {/* Key Concepts Section */}
+      <Card className="backdrop-blur-lg bg-white/5 dark:bg-gray-900/10 border-white/10 dark:border-gray-700/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lightbulb className="h-5 w-5" />
+            Key Concepts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {concepts.length > 0 ? (
+            <div className="space-y-3">
+              {concepts.map((node: any, idx: number) => (
+                <div key={idx}>
+                  <h4 className="font-semibold">{node.label}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {node.description || 'Key concept from document'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No concepts extracted yet</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Important Points Section */}
+      <Card className="backdrop-blur-lg bg-white/5 dark:bg-gray-900/10 border-white/10 dark:border-gray-700/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Hash className="h-5 w-5" />
+            Important Points
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {phases.length > 0 ? (
+            <ul className="space-y-2">
+              {phases.map((phase: any, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span>
+                  <div>
+                    <strong className="font-semibold">{phase.title}</strong>
+                    {phase.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5">{phase.description}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : timelineEvents.length > 0 ? (
+            <ul className="space-y-2">
+              {timelineEvents.map((event: any, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span>
+                  <span className="text-sm">{event.title || event.description}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No key points extracted yet</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Summary Section */}
+      <Card className="backdrop-blur-lg bg-white/5 dark:bg-gray-900/10 border-white/10 dark:border-gray-700/20">
+        <CardHeader>
+          <CardTitle>Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm leading-relaxed">
+            {phases.length > 0 ? (
+              <>
+                This document covers <strong>{phases.length} main phases</strong>:{' '}
+                {phases.map((p: any) => p.title).join(', ')}.
+              </>
+            ) : concepts.length > 0 ? (
+              <>
+                This document contains <strong>{concepts.length} key concepts</strong> including{' '}
+                {concepts.slice(0, 3).map((n: any) => n.label).join(', ')}
+                {concepts.length > 3 && ` and ${concepts.length - 3} more`}.
+              </>
+            ) : (
+              'Auto-generated summary will appear here once document is processed.'
+            )}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Footer */}
+      <p className="text-xs text-muted-foreground text-center pb-4">
+        💡 Notes are automatically generated from your document's content
       </p>
     </div>
   );
