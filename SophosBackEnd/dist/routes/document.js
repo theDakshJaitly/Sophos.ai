@@ -61,7 +61,7 @@ router.post('/upload', upload.single('file'), (req, res) => __awaiter(void 0, vo
         // 2. Check for duplicate by hash and user_id
         const { data: existingDoc, error: findError } = yield supabase_admin_1.supabaseAdmin
             .from('documents')
-            .select('id, concepts')
+            .select('id, concepts, timeline, action_plan')
             .eq('user_id', userId)
             .eq('file_hash', hash)
             .maybeSingle();
@@ -77,7 +77,15 @@ router.post('/upload', upload.single('file'), (req, res) => __awaiter(void 0, vo
                     safeConcepts.nodes = [];
                 if (!safeConcepts.edges)
                     safeConcepts.edges = [];
-                return res.status(200).json(safeConcepts);
+                // Ensure timeline structure
+                let timeline = existingDoc.timeline || { events: [] };
+                if (!timeline.events)
+                    timeline = { events: [] };
+                // Ensure action plan structure
+                let actionPlan = existingDoc.action_plan || { phases: [] };
+                if (!actionPlan.phases)
+                    actionPlan = { phases: [] };
+                return res.status(200).json(Object.assign(Object.assign({}, safeConcepts), { timeline: timeline.events, actionPlan: actionPlan, documentId: existingDoc.id }));
             }
             // Fallback: Fetch the previously saved chunks (legacy)
             const { data: chunks, error: chunksError } = yield supabase_admin_1.supabaseAdmin
@@ -96,8 +104,8 @@ router.post('/upload', upload.single('file'), (req, res) => __awaiter(void 0, vo
             });
         }
         console.log(`Processing file: ${req.file.originalname} for user: ${userId}`);
-        // 3. Process the PDF to get concepts and chunks.
-        let { concepts, chunks } = yield (0, pdfProcessor_1.processPdf)(fileBuffer);
+        // 3. Process the PDF to get concepts, timeline, action plan, and chunks.
+        let { concepts, timeline, actionPlan, chunks } = yield (0, pdfProcessor_1.processPdf)(fileBuffer);
         // Remove null bytes from concepts before saving
         concepts = removeNullBytes(concepts);
         // Always ensure both nodes and edges are present and are arrays
@@ -105,10 +113,25 @@ router.post('/upload', upload.single('file'), (req, res) => __awaiter(void 0, vo
             concepts.nodes = [];
         if (!concepts.edges)
             concepts.edges = [];
-        // 4. Insert the main document record into the database, including file_hash and sanitized concepts
+        // Ensure timeline has proper structure
+        if (!timeline || !timeline.events) {
+            timeline = { events: [] };
+        }
+        // Ensure action plan has proper structure
+        if (!actionPlan || !actionPlan.phases) {
+            actionPlan = { phases: [] };
+        }
+        // 4. Insert the main document record into the database, including file_hash, concepts, timeline, and action_plan
         const { data: document, error: docError } = yield supabase_admin_1.supabaseAdmin
             .from('documents')
-            .insert({ user_id: userId, file_name: req.file.originalname, file_hash: hash, concepts })
+            .insert({
+            user_id: userId,
+            file_name: req.file.originalname,
+            file_hash: hash,
+            concepts,
+            timeline,
+            action_plan: actionPlan
+        })
             .select('id')
             .single();
         if (docError)
@@ -129,8 +152,8 @@ router.post('/upload', upload.single('file'), (req, res) => __awaiter(void 0, vo
             throw chunksError;
         }
         console.log(`Successfully saved ${chunksToInsert.length} chunks to database.`);
-        // 6. Return the concepts to the frontend to build the mind map.
-        res.status(200).json(concepts);
+        // 6. Return the concepts, timeline, and action plan to the frontend.
+        res.status(200).json(Object.assign(Object.assign({}, concepts), { timeline: timeline.events, actionPlan: actionPlan, documentId: document.id }));
     }
     catch (error) {
         console.error('--- A critical error occurred in the /upload route ---');

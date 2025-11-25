@@ -14,6 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.extractConcepts = extractConcepts;
+exports.extractTimelineEvents = extractTimelineEvents;
+exports.extractActionPlan = extractActionPlan;
 exports.generateChatResponse = generateChatResponse;
 exports.createEmbedding = createEmbedding;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
@@ -109,6 +111,201 @@ function extractConcepts(text) {
             throw e;
         }
         console.log('Parsed mindmap concepts:', parsed);
+        return parsed;
+    });
+}
+// Extract timeline events from document text
+function extractTimelineEvents(text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
+        const prompt = `
+    You are an expert at extracting chronological events from documents.
+    Analyze this text and identify key events, occurrences, or milestones in the order they happened.
+    
+    RULES FOR EVENT EXTRACTION:
+    1. **Sequence**: Number events in the order they occur (1, 2, 3...)
+    2. **Date**: Extract ONLY if explicitly mentioned (format: YYYY-MM-DD, YYYY-MM, or YYYY)
+       - If no date is mentioned, leave as null
+    3. **Title**: Brief event name (5-8 words maximum)
+    4. **Description**: What happened (1-2 sentences, clear and concise)
+    5. **Entities**: People, organizations, places, or things involved (array of strings)
+    6. **Category**: Group related events (e.g., "Investigation", "Financial", "Personal", "Legal", "Product")
+       - Look for thematic patterns to create logical categories
+       - Use consistent category names for related events
+    7. **Importance**: Rate significance as "low", "medium", or "high"
+    
+    TEMPORAL INDICATORS TO LOOK FOR:
+    - Explicit dates: "On January 15, 2020", "in 2019", "March 2021"
+    - Sequential: "first", "then", "after", "before", "later", "meanwhile", "subsequently", "finally"
+    - Relative time: "the next day", "a week later", "previously"
+    
+    IMPORTANT:
+    - Only extract actual events, not general statements or definitions
+    - Minimum 3 events, maximum 20 events
+    - Events should be substantial and meaningful to the narrative
+    - If the document has no clear temporal progression, extract key points in logical order
+    
+    OUTPUT FORMAT (JSON only):
+    {
+      "events": [
+        {
+          "id": "evt_1",
+          "sequence": 1,
+          "date": "2020-01-15" or null,
+          "title": "Brief event title",
+          "description": "Clear description of what happened in 1-2 sentences.",
+          "entities": ["Person A", "Company B", "Location C"],
+          "category": "Investigation",
+          "importance": "high"
+        }
+      ]
+    }
+    
+    Text to analyze:
+    ---
+    ${text}
+    ---
+    
+    Output ONLY valid JSON, nothing else.
+  `;
+        const chatCompletion = yield groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.1-8b-instant',
+            temperature: 0.3,
+            response_format: { type: 'json_object' }
+        });
+        const jsonResponse = (_b = (_a = chatCompletion.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content;
+        console.log('Raw LLM response for timeline:', jsonResponse);
+        if (!jsonResponse) {
+            throw new Error('Groq API returned an empty response for timeline events.');
+        }
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonResponse);
+        }
+        catch (e) {
+            console.error('Failed to parse LLM timeline JSON:', jsonResponse);
+            throw e;
+        }
+        console.log('Parsed timeline events:', parsed);
+        // Validate and ensure proper structure
+        if (!parsed.events || !Array.isArray(parsed.events)) {
+            console.warn('No events array found, returning empty timeline');
+            return { events: [] };
+        }
+        return parsed;
+    });
+}
+// Extract hierarchical action plan from document text
+function extractActionPlan(text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
+        const prompt = `
+    You are an expert at extracting actionable steps and organizing them into structured plans.
+    Analyze this document and create a hierarchical action plan with phases and steps.
+    
+    RULES FOR ACTION PLAN EXTRACTION:
+    1. **Phases**: Group related steps into logical phases/categories
+       - Each phase should represent a major objective or stage
+       - Use clear, concise phase titles (3-6 words)
+    
+    2. **Steps**: Break down each phase into concrete, actionable steps
+       - Steps should be specific and implementable
+       - Each step is a single, clear action
+       - Use imperative verbs (Install, Create, Configure, Test, etc.)
+    
+    3. **Priority**: Assign priority based on importance/urgency
+       - "high": Critical, must-do items
+       - "medium": Important but not urgent
+       - "low": Nice-to-have, optional items
+    
+    4. **Effort Estimate** (optional): Brief time/complexity estimate
+       - Examples: "5 minutes", "1 hour", "2 days", "Quick", "Complex"
+    
+    DOCUMENT TYPES TO HANDLE:
+    - **Tutorials/Guides**: Extract step-by-step instructions
+    - **Research Papers**: Methodology → Analysis → Conclusions
+    - **Business Reports**: Recommendations and action items
+    - **Meeting Notes**: Decisions and next steps
+    - **How-to Documents**: Procedures and processes
+    - **Technical Specs**: Implementation requirements
+    
+    IMPORTANT:
+    - Minimum 2 phases, maximum 6 phases
+    - Minimum 2 steps per phase, maximum 10 steps per phase
+    - Only extract actual actionable items, not general information
+    - If no clear action plan exists, extract key points as steps
+    
+    OUTPUT FORMAT (JSON only):
+    {
+      "phases": [
+        {
+          "id": "phase_1",
+          "title": "Environment Setup",
+          "description": "Prepare development environment and tools",
+          "steps": [
+            {
+              "id": "step_1_1",
+              "text": "Install Node.js version 18 or higher",
+              "priority": "high",
+              "estimated_effort": "5 minutes"
+            },
+            {
+              "id": "step_1_2",
+              "text": "Configure database connection settings",
+              "priority": "high",
+              "estimated_effort": "15 minutes"
+            }
+          ]
+        },
+        {
+          "id": "phase_2",
+          "title": "Implementation",
+          "description": "Build core functionality",
+          "steps": [
+            {
+              "id": "step_2_1",
+              "text": "Create REST API endpoints for user management",
+              "priority": "medium",
+              "estimated_effort": "2 hours"
+            }
+          ]
+        }
+      ]
+    }
+    
+    Text to analyze:
+    ---
+    ${text}
+    ---
+    
+    Output ONLY valid JSON, nothing else.
+  `;
+        const chatCompletion = yield groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.1-8b-instant',
+            temperature: 0.3,
+            response_format: { type: 'json_object' }
+        });
+        const jsonResponse = (_b = (_a = chatCompletion.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content;
+        console.log('Raw LLM response for action plan:', jsonResponse);
+        if (!jsonResponse) {
+            throw new Error('Groq API returned an empty response for action plan.');
+        }
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonResponse);
+        }
+        catch (e) {
+            console.error('Failed to parse LLM action plan JSON:', jsonResponse);
+            throw e;
+        }
+        console.log('Parsed action plan:', parsed);
+        // Validate and ensure proper structure
+        if (!parsed.phases || !Array.isArray(parsed.phases)) {
+            console.warn('No phases array found, returning empty action plan');
+            return { phases: [] };
+        }
         return parsed;
     });
 }
