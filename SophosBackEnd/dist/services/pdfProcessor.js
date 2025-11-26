@@ -43,14 +43,21 @@ function processPdf(fileBuffer) {
                 text: chunk,
                 embedding: embeddings[i],
             }));
-            // 4. Extract the concepts for the mind map.
-            console.log('Extracting concepts...');
+            // 4. Extract the concepts, timeline, and action plan.
+            console.log('Extracting concepts, timeline events, and action plan...');
             const textChunkForMap = text.substring(0, 15000);
-            const concepts = yield (0, ai_1.extractConcepts)(textChunkForMap);
-            console.log('Concepts extracted successfully.');
+            // Extract all AI-powered features in parallel
+            const [concepts, timeline, actionPlan] = yield Promise.all([
+                (0, ai_1.extractConcepts)(textChunkForMap),
+                (0, ai_1.extractTimelineEvents)(textChunkForMap),
+                (0, ai_1.extractActionPlan)(textChunkForMap)
+            ]);
+            console.log('Concepts, timeline, and action plan extracted successfully.');
             // 5. Return the complete, processed data.
             return {
                 concepts,
+                timeline,
+                actionPlan,
                 chunks: ragData,
             };
         }

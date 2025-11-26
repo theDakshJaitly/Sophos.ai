@@ -97,7 +97,7 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
         // Check if already processed
         const { data: existingDoc, error: findError } = yield supabase
             .from('documents')
-            .select('id, concepts')
+            .select('id, concepts, timeline, action_plan')
             .eq('user_id', userId)
             .eq('file_hash', hash)
             .maybeSingle();
@@ -107,9 +107,20 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
         }
         if (existingDoc && existingDoc.concepts) {
             console.log('Video already processed, returning existing concepts');
+            // Ensure timeline structure
+            let timeline = existingDoc.timeline || { events: [] };
+            if (!timeline.events)
+                timeline = { events: [] };
+            // Ensure action plan structure
+            let actionPlan = existingDoc.action_plan || { phases: [] };
+            if (!actionPlan.phases)
+                actionPlan = { phases: [] };
             return res.status(200).json({
                 concepts: existingDoc.concepts,
+                timeline: timeline.events,
+                actionPlan: actionPlan, // Send full object with {phases: [...]}
                 videoId,
+                documentId: existingDoc.id,
                 cached: true
             });
         }
@@ -129,9 +140,17 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
       1. Identify main concepts and sub-topics
       2. Create meaningful relationships between concepts
       3. Use clear, concise labels (1-5 words)
-      4. Output JSON with "nodes" and "edges" arrays
+      4. Provide a brief description for each concept (1-2 sentences)
+      5. Include a relevant excerpt from the transcript as source for each concept
+      6. Output JSON with "nodes" and "edges" arrays
       
-      Each node needs: { "id": "1", "label": "Concept Name" }
+      Each node needs: 
+      { 
+        "id": "1", 
+        "label": "Concept Name",
+        "description": "Brief explanation of this concept",
+        "source": "Relevant excerpt from transcript where this concept appears"
+      }
       Each edge needs: { "source": "1", "target": "2", "label": "relationship" }
       
       TRANSCRIPT:
@@ -151,12 +170,32 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
         if (!conceptsJson) {
             throw new Error('Failed to generate concepts from transcript.');
         }
+        console.log('Raw concepts JSON from AI:', conceptsJson.substring(0, 200));
         const concepts = JSON.parse(conceptsJson);
         // Ensure proper structure
         if (!concepts.nodes)
             concepts.nodes = [];
         if (!concepts.edges)
             concepts.edges = [];
+        console.log(`Generated ${concepts.nodes.length} nodes and ${concepts.edges.length} edges`);
+        if (!concepts.edges)
+            concepts.edges = [];
+        // Extract timeline events from transcript
+        console.log('Extracting timeline events from transcript...');
+        const timeline = yield (0, ai_1.extractTimelineEvents)(transcript.substring(0, 15000));
+        console.log('Timeline events extracted successfully.');
+        // Ensure timeline structure
+        if (!timeline || !timeline.events) {
+            timeline.events = [];
+        }
+        // Extract action plan from transcript
+        console.log('Extracting action plan from transcript...');
+        const actionPlan = yield (0, ai_1.extractActionPlan)(transcript.substring(0, 15000));
+        console.log('Action plan extracted successfully.');
+        // Ensure action plan structure
+        if (!actionPlan || !actionPlan.phases) {
+            actionPlan.phases = [];
+        }
         // Create chunks for semantic search
         const chunks = chunkText(transcript, 500);
         const chunksWithEmbeddings = yield Promise.all(chunks.map((text) => __awaiter(void 0, void 0, void 0, function* () {
@@ -172,7 +211,9 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
             user_id: userId,
             file_name: `YouTube: ${videoId}`,
             file_hash: hash,
-            concepts
+            concepts,
+            timeline,
+            action_plan: actionPlan
         })
             .select('id')
             .single();
@@ -196,7 +237,10 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
         console.log(`Successfully processed YouTube video: ${videoId}`);
         res.status(200).json({
             concepts,
+            timeline: timeline.events,
+            actionPlan: actionPlan, // Send full object with {phases: [...]}
             videoId,
+            documentId: document.id,
             cached: false
         });
     }
@@ -212,12 +256,21 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
 function fetchYouTubeTranscript(videoId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const { YoutubeTranscript } = yield Promise.resolve().then(() => __importStar(require('youtube-transcript')));
-            const transcript = yield YoutubeTranscript.fetchTranscript(videoId);
-            return transcript.map((entry) => entry.text).join(' ');
+            console.log(`Attempting to fetch transcript for video: ${videoId}`);
+            const { YoutubeTranscript } = yield Promise.resolve().then(() => __importStar(require('@danielxceron/youtube-transcript')));
+            const transcriptData = yield YoutubeTranscript.fetchTranscript(videoId);
+            if (!transcriptData || transcriptData.length === 0) {
+                console.error('No transcript data returned');
+                return null;
+            }
+            const fullText = transcriptData.map((item) => item.text).join(' ');
+            console.log(`Successfully fetched transcript (${fullText.length} characters)`);
+            console.log(`First 200 chars: ${fullText.substring(0, 200)}`);
+            return fullText;
         }
         catch (error) {
             console.error('Error fetching YouTube transcript:', error);
+            console.error('Error message:', error.message);
             return null;
         }
     });

@@ -116,8 +116,19 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
 
       console.log('YouTube Upload Response:', response.data);
 
-      // Store the full response data (includes concepts, timeline, actionPlan)
-      setWorkflowData(response.data);
+      // Transform the response to match the expected structure
+      // Backend returns: { concepts: { nodes, edges }, timeline, actionPlan }
+      // Frontend expects: { nodes, edges, timeline, actionPlan }
+      const transformedData = {
+        nodes: response.data.concepts?.nodes || [],
+        edges: response.data.concepts?.edges || [],
+        timeline: response.data.timeline || [],
+        actionPlan: response.data.actionPlan || { phases: [] },
+        documentId: response.data.documentId
+      };
+
+      console.log('Transformed data for frontend:', transformedData);
+      setWorkflowData(transformedData);
 
       // Extract documentId from response
       const documentId = response.data.documentId;
