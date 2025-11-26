@@ -258,17 +258,37 @@ function fetchYouTubeTranscript(videoId) {
         var _a, _b;
         try {
             console.log(`Attempting to fetch transcript for video: ${videoId}`);
-            const { YoutubeTranscript } = yield Promise.resolve().then(() => __importStar(require('@danielxceron/youtube-transcript')));
-            // Try to fetch transcript - the package will try multiple languages automatically
-            // It tries: requested language → English → any available language
-            const transcriptData = yield YoutubeTranscript.fetchTranscript(videoId, {
-                lang: 'en', // Prefer English, but will fall back to other languages
-            });
-            if (!transcriptData || transcriptData.length === 0) {
-                console.error('No transcript data returned');
+            // Import only what we need from youtubei.js
+            const { Innertube } = yield Promise.resolve().then(() => __importStar(require('youtubei.js')));
+            // Initialize YouTube client
+            const youtube = yield Innertube.create();
+            // Get video info
+            const videoInfo = yield youtube.getInfo(videoId);
+            // Get transcript
+            const transcriptData = yield videoInfo.getTranscript();
+            if (!transcriptData || !transcriptData.transcript) {
+                console.error('No transcript data available for this video');
                 return null;
             }
-            const fullText = transcriptData.map((item) => item.text).join(' ');
+            // Check if content and body exist
+            if (!transcriptData.transcript.content || !transcriptData.transcript.content.body) {
+                console.error('Transcript structure is incomplete');
+                return null;
+            }
+            // Extract text from transcript segments
+            const segments = transcriptData.transcript.content.body.initial_segments;
+            if (!segments || segments.length === 0) {
+                console.error('No transcript segments found');
+                return null;
+            }
+            const fullText = segments
+                .map((segment) => { var _a; return ((_a = segment.snippet) === null || _a === void 0 ? void 0 : _a.text) || ''; })
+                .filter((text) => text.length > 0)
+                .join(' ');
+            if (!fullText || fullText.length === 0) {
+                console.error('Transcript is empty');
+                return null;
+            }
             console.log(`Successfully fetched transcript (${fullText.length} characters)`);
             console.log(`First 200 chars: ${fullText.substring(0, 200)}`);
             return fullText;

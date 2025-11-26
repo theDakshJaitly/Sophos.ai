@@ -239,20 +239,45 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string | null> {
     try {
         console.log(`Attempting to fetch transcript for video: ${videoId}`);
 
-        const { YoutubeTranscript } = await import('@danielxceron/youtube-transcript');
+        // Import only what we need from youtubei.js
+        const { Innertube } = await import('youtubei.js');
 
-        // Try to fetch transcript - the package will try multiple languages automatically
-        // It tries: requested language → English → any available language
-        const transcriptData = await YoutubeTranscript.fetchTranscript(videoId, {
-            lang: 'en', // Prefer English, but will fall back to other languages
-        });
+        // Initialize YouTube client
+        const youtube = await Innertube.create();
 
-        if (!transcriptData || transcriptData.length === 0) {
-            console.error('No transcript data returned');
+        // Get video info
+        const videoInfo = await youtube.getInfo(videoId);
+
+        // Get transcript
+        const transcriptData = await videoInfo.getTranscript();
+
+        if (!transcriptData || !transcriptData.transcript) {
+            console.error('No transcript data available for this video');
             return null;
         }
 
-        const fullText = transcriptData.map((item: any) => item.text).join(' ');
+        // Check if content and body exist
+        if (!transcriptData.transcript.content || !transcriptData.transcript.content.body) {
+            console.error('Transcript structure is incomplete');
+            return null;
+        }
+
+        // Extract text from transcript segments
+        const segments = transcriptData.transcript.content.body.initial_segments;
+        if (!segments || segments.length === 0) {
+            console.error('No transcript segments found');
+            return null;
+        }
+
+        const fullText = segments
+            .map((segment: any) => segment.snippet?.text || '')
+            .filter((text: string) => text.length > 0)
+            .join(' ');
+
+        if (!fullText || fullText.length === 0) {
+            console.error('Transcript is empty');
+            return null;
+        }
 
         console.log(`Successfully fetched transcript (${fullText.length} characters)`);
         console.log(`First 200 chars: ${fullText.substring(0, 200)}`);
