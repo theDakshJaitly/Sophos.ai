@@ -140,9 +140,17 @@ router.post('/process', (req, res) => __awaiter(void 0, void 0, void 0, function
       1. Identify main concepts and sub-topics
       2. Create meaningful relationships between concepts
       3. Use clear, concise labels (1-5 words)
-      4. Output JSON with "nodes" and "edges" arrays
+      4. Provide a brief description for each concept (1-2 sentences)
+      5. Include a relevant excerpt from the transcript as source for each concept
+      6. Output JSON with "nodes" and "edges" arrays
       
-      Each node needs: { "id": "1", "label": "Concept Name" }
+      Each node needs: 
+      { 
+        "id": "1", 
+        "label": "Concept Name",
+        "description": "Brief explanation of this concept",
+        "source": "Relevant excerpt from transcript where this concept appears"
+      }
       Each edge needs: { "source": "1", "target": "2", "label": "relationship" }
       
       TRANSCRIPT:
@@ -249,7 +257,7 @@ function fetchYouTubeTranscript(videoId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             console.log(`Attempting to fetch transcript for video: ${videoId}`);
-            const { YoutubeTranscript } = yield Promise.resolve().then(() => __importStar(require('youtube-transcript')));
+            const { YoutubeTranscript } = yield Promise.resolve().then(() => __importStar(require('@danielxceron/youtube-transcript')));
             const transcriptData = yield YoutubeTranscript.fetchTranscript(videoId);
             if (!transcriptData || transcriptData.length === 0) {
                 console.error('No transcript data returned');
