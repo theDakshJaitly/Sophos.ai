@@ -240,7 +240,12 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string | null> {
         console.log(`Attempting to fetch transcript for video: ${videoId}`);
 
         const { YoutubeTranscript } = await import('@danielxceron/youtube-transcript');
-        const transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
+
+        // Try to fetch transcript - the package will try multiple languages automatically
+        // It tries: requested language → English → any available language
+        const transcriptData = await YoutubeTranscript.fetchTranscript(videoId, {
+            lang: 'en', // Prefer English, but will fall back to other languages
+        });
 
         if (!transcriptData || transcriptData.length === 0) {
             console.error('No transcript data returned');
@@ -256,6 +261,16 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string | null> {
     } catch (error: any) {
         console.error('Error fetching YouTube transcript:', error);
         console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+
+        // Provide more specific error info
+        if (error.message?.toLowerCase().includes('transcript')) {
+            console.error('→ This video may have transcripts disabled or age-restricted');
+        }
+        if (error.message?.toLowerCase().includes('unavailable')) {
+            console.error('→ Transcripts are not available for this video');
+        }
+
         return null;
     }
 }
