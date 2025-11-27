@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input"
 import { UploadedFile } from "../page";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Upload, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
 import { getApiUrl } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useDashboard } from '../context/DashboardContext';
 interface SidebarProps {
     setWorkflowData: (data: any) => void;
     setIsLoading: (isLoading: boolean) => void;
@@ -187,75 +188,154 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             setIsLoading(false);
         }
     };
+    const { leftSidebarCollapsed, toggleLeftSidebar } = useDashboard();
+
     return (
-        <aside className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col p-4">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-full bg-primary" />
-                <h1 className="text-2xl font-bold">Sophos.ai</h1>
+        <aside
+            className={cn(
+                "flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col p-4 relative transition-all duration-300 ease-in-out",
+                leftSidebarCollapsed ? "w-20" : "w-64"
+            )}
+        >
+            <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-primary flex-shrink-0" />
+                {!leftSidebarCollapsed && <h1 className="text-2xl font-bold truncate">Sophos.ai</h1>}
             </div>
-            <div className="flex-grow">
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Recent Uploads</h3>
-                <ul className="space-y-1">
-                    {recentUploads.length > 0 ? (
-                        recentUploads.map((file) => (
-                            <li key={file.id}>
+
+            {/* Collapse Toggle Button */}
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleLeftSidebar}
+                className={cn(
+                    "h-8 w-8 mb-4",
+                    leftSidebarCollapsed ? "mx-auto" : "ml-auto"
+                )}
+                title={leftSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+                {leftSidebarCollapsed ? (
+                    <ChevronRight className="h-4 w-4" />
+                ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                )}
+            </Button>
+
+            {!leftSidebarCollapsed && (
+                <>
+                    <div className="flex-grow">
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-2">Recent Uploads</h3>
+                        <ul className="space-y-1">
+                            {recentUploads.length > 0 ? (
+                                recentUploads.map((file) => (
+                                    <li key={file.id}>
+                                        <Button
+                                            variant="ghost"
+                                            className={cn(
+                                                "w-full justify-start text-sm truncate font-normal",
+                                                currentDocumentId === file.documentId && "bg-accent"
+                                            )}
+                                            onClick={() => handleSelectDocument(file)}
+                                            disabled={isLoading}
+                                        >
+                                            {file.name}
+                                        </Button>
+                                    </li>
+                                ))
+                            ) : (
+                                <p className="text-xs text-muted-foreground px-2">Upload a document to start.</p>
+                            )}
+                        </ul>
+                    </div>
+                    <div className="mt-auto space-y-4">
+                        {/* Add Content Section */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-muted-foreground mb-3">Add Content</h3>
+                            {/* YouTube URL Input */}
+                            <div className="space-y-2 mb-3">
+                                <label className="text-xs text-muted-foreground">Paste YouTube Link</label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="text"
+                                        placeholder="https://youtube.com/watch?v=..."
+                                        value={youtubeUrl}
+                                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                                        disabled={isLoading}
+                                        className="flex-1 text-sm"
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleYoutubeSubmit();
+                                            }
+                                        }}
+                                    />
+                                    <Button
+                                        onClick={handleYoutubeSubmit}
+                                        disabled={isLoading || !youtubeUrl.trim()}
+                                        size="sm"
+                                    >
+                                        Go
+                                    </Button>
+                                </div>
+                            </div>
+                            {/* Upload PDF Button */}
+                            <label htmlFor="file-upload">
                                 <Button
-                                    variant="ghost"
-                                    className={cn(
-                                        "w-full justify-start text-sm truncate font-normal",
-                                        currentDocumentId === file.documentId && "bg-accent"
-                                    )}
-                                    onClick={() => handleSelectDocument(file)}
+                                    variant="default"
+                                    className="w-full"
                                     disabled={isLoading}
+                                    onClick={() => document.getElementById('file-upload')?.click()}
                                 >
-                                    {file.name}
+                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upload PDF"}
                                 </Button>
-                            </li>
-                        ))
-                    ) : (
-                        <p className="text-xs text-muted-foreground px-2">Upload a document to start.</p>
-                    )}
-                </ul>
-            </div>
-            <div className="mt-auto space-y-4">
-                {/* Add Content Section */}
-                <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-3">Add Content</h3>
-                    {/* YouTube URL Input */}
-                    <div className="space-y-2 mb-3">
-                        <label className="text-xs text-muted-foreground">Paste YouTube Link</label>
-                        <div className="flex gap-2">
-                            <Input
-                                type="text"
-                                placeholder="https://youtube.com/watch?v=..."
-                                value={youtubeUrl}
-                                onChange={(e) => setYoutubeUrl(e.target.value)}
-                                disabled={isLoading}
-                                className="flex-1 text-sm"
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleYoutubeSubmit();
-                                    }
-                                }}
-                            />
-                            <Button
-                                onClick={handleYoutubeSubmit}
-                                disabled={isLoading || !youtubeUrl.trim()}
-                                size="sm"
-                            >
-                                Go
-                            </Button>
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    disabled={isLoading}
+                                />
+                            </label>
+                        </div>
+                        {/* Current Session */}
+                        <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                            <h3 className="text-sm font-semibold text-muted-foreground mb-2">Current Session</h3>
+                            <p className="text-xs text-muted-foreground">
+                                {recentUploads.find(f => f.documentId === currentDocumentId)?.name || "No document loaded"}
+                            </p>
                         </div>
                     </div>
-                    {/* Upload PDF Button */}
-                    <label htmlFor="file-upload">
+                </>
+            )}
+
+            {/* Collapsed State - Show Icons Only */}
+            {leftSidebarCollapsed && (
+                <div className="flex flex-col items-center gap-4 h-full">
+                    {recentUploads.slice(0, 3).map((file) => (
                         <Button
-                            variant="default"
-                            className="w-full"
+                            key={file.id}
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSelectDocument(file)}
                             disabled={isLoading}
-                            onClick={() => document.getElementById('file-upload')?.click()}
+                            title={file.name}
+                            className={cn(
+                                "w-12 h-12",
+                                currentDocumentId === file.documentId && "bg-accent"
+                            )}
                         >
-                            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upload PDF"}
+                            <FileText className="w-5 h-5" />
+                        </Button>
+                    ))}
+                    <div className="mt-auto">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                            disabled={isLoading}
+                            title="Upload PDF"
+                            className="w-12 h-12"
+                        >
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                         </Button>
                         <input
                             id="file-upload"
@@ -265,16 +345,9 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                             className="hidden"
                             disabled={isLoading}
                         />
-                    </label>
+                    </div>
                 </div>
-                {/* Current Session */}
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-2">Current Session</h3>
-                    <p className="text-xs text-muted-foreground">
-                        {recentUploads.find(f => f.documentId === currentDocumentId)?.name || "No document loaded"}
-                    </p>
-                </div>
-            </div>
+            )}
         </aside>
     );
 }

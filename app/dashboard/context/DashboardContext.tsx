@@ -14,6 +14,10 @@ interface DashboardContextType {
     setActiveMode: (mode: ActiveMode) => void;
     workflowSubView: ViewMode;
     setWorkflowSubView: (view: ViewMode) => void;
+    leftSidebarCollapsed: boolean;
+    toggleLeftSidebar: () => void;
+    rightPanelCollapsed: boolean;
+    toggleRightPanel: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -23,6 +27,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const [triggerChatSubmit, setTriggerChatSubmit] = useState(false);
     const [activeMode, setActiveMode] = useState<ActiveMode>('workflow');
     const [workflowSubView, setWorkflowSubView] = useState<ViewMode>('graph');
+    const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+    const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+
+    const toggleLeftSidebar = () => setLeftSidebarCollapsed(prev => !prev);
+    const toggleRightPanel = () => setRightPanelCollapsed(prev => !prev);
 
     return (
         <DashboardContext.Provider value={{
@@ -33,7 +42,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             activeMode,
             setActiveMode,
             workflowSubView,
-            setWorkflowSubView
+            setWorkflowSubView,
+            leftSidebarCollapsed,
+            toggleLeftSidebar,
+            rightPanelCollapsed,
+            toggleRightPanel
         }}>
             {children}
         </DashboardContext.Provider>
