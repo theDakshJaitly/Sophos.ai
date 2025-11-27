@@ -22,6 +22,7 @@ interface SidebarProps {
 export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecentUploads, setCurrentDocumentId, currentDocumentId, isLoading }: SidebarProps) {
     const { toast } = useToast();
     const [youtubeUrl, setYoutubeUrl] = useState('');
+    const [loadingSample, setLoadingSample] = useState(false);
     // Handler to select and load a document from recent uploads
     const handleSelectDocument = async (file: UploadedFile) => {
         if (!file.documentId) {
@@ -188,6 +189,68 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             setIsLoading(false);
         }
     };
+
+    const handleTrySample = async () => {
+        setLoadingSample(true);
+        setIsLoading(true);
+        setWorkflowData(null);
+
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                throw new Error("Your session could not be verified. Please log in again.");
+            }
+
+            // Fetch the sample document from public folder
+            const response = await fetch('/sample-document.pdf');
+            const blob = await response.blob();
+            const file = new File([blob], 'Sample-Document.pdf', { type: 'application/pdf' });
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const headers = {
+                'Authorization': `Bearer ${session.access_token}`
+            };
+
+            const uploadResponse = await axios.post(
+                getApiUrl('documents/upload'),
+                formData,
+                { headers }
+            );
+
+            console.log('Sample Upload Response:', uploadResponse.data);
+            setWorkflowData(uploadResponse.data);
+
+            const documentId = uploadResponse.data.documentId;
+            setRecentUploads(prev => [
+                { id: new Date().toISOString(), name: 'Sample Document', documentId },
+                ...prev
+            ].slice(0, 5));
+
+            if (documentId) {
+                setCurrentDocumentId(documentId);
+            }
+
+            toast({
+                title: "Sample Loaded!",
+                description: "Explore Sophos.ai features with this demo document.",
+            });
+        } catch (error) {
+            const errMessage = (axios.isAxiosError(error) && error.response?.data?.message)
+                ? error.response.data.message
+                : error instanceof Error ? error.message : "An unknown error occurred.";
+            toast({
+                variant: "destructive",
+                title: "Failed to Load Sample",
+                description: errMessage,
+            });
+            console.error("Sample load failed:", error);
+        } finally {
+            setIsLoading(false);
+            setLoadingSample(false);
+        }
+    };
     const { leftSidebarCollapsed, toggleLeftSidebar } = useDashboard();
 
     return (
@@ -197,28 +260,37 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                 leftSidebarCollapsed ? "w-20" : "w-64"
             )}
         >
-            <div className="flex items-center gap-3 mb-4">
+            <div className={cn(
+                "flex items-center mb-4",
+                leftSidebarCollapsed ? "flex-col gap-3" : "gap-3"
+            )}>
                 <div className="w-10 h-10 rounded-full bg-primary flex-shrink-0" />
-                {!leftSidebarCollapsed && <h1 className="text-2xl font-bold truncate">Sophos.ai</h1>}
+                {!leftSidebarCollapsed && (
+                    <>
+                        <h1 className="text-2xl font-bold truncate flex-1">Sophos.ai</h1>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleLeftSidebar}
+                            className="h-8 w-8 flex-shrink-0"
+                            title="Collapse sidebar"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                    </>
+                )}
+                {leftSidebarCollapsed && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleLeftSidebar}
+                        className="h-8 w-8"
+                        title="Expand sidebar"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
-
-            {/* Collapse Toggle Button */}
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleLeftSidebar}
-                className={cn(
-                    "h-8 w-8 mb-4",
-                    leftSidebarCollapsed ? "mx-auto" : "ml-auto"
-                )}
-                title={leftSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-                {leftSidebarCollapsed ? (
-                    <ChevronRight className="h-4 w-4" />
-                ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                )}
-            </Button>
 
             {!leftSidebarCollapsed && (
                 <>
@@ -231,7 +303,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                                         <Button
                                             variant="ghost"
                                             className={cn(
-                                                "w-full justify-start text-sm truncate font-normal",
+                                                "w-full justify-start text-sm truncate font-normal hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors",
                                                 currentDocumentId === file.documentId && "bg-accent"
                                             )}
                                             onClick={() => handleSelectDocument(file)}
@@ -250,6 +322,30 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                         {/* Add Content Section */}
                         <div>
                             <h3 className="text-sm font-semibold text-muted-foreground mb-3">Add Content</h3>
+
+                            {/* Try Sample Button - Only show for first-time users */}
+                            {recentUploads.length === 0 && (
+                                <div className="mb-3">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full border-dashed border-2 border-primary/50 hover:border-primary hover:bg-primary/5"
+                                        onClick={handleTrySample}
+                                        disabled={isLoading || loadingSample}
+                                    >
+                                        {loadingSample ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Loading Sample...
+                                            </>
+                                        ) : (
+                                            <>
+                                                ✨ Try Sample Document
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+
                             {/* YouTube URL Input */}
                             <div className="space-y-2 mb-3">
                                 <label className="text-xs text-muted-foreground">Paste YouTube Link</label>
