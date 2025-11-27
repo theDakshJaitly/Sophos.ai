@@ -233,7 +233,7 @@ export function RightPanel({ setWorkflowData, setIsLoading, recentUploads, setRe
                 A Prometheus Rising Product
               </p>
               <p className="text-xs text-gray-300 mt-1">
-                ✨ Powered by AI
+                Powered by AI
               </p>
             </div>
           </div>

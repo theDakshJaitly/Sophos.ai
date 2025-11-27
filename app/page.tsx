@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChevronRight, FileText, PenTool, Search, Share2, Users2, Store, Mail, Linkedin, Twitter, Facebook, Instagram } from "lucide-react"
 import { WaveBackground } from "@/components/ui/wave-background"
 import { Analytics } from "@vercel/analytics/next"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 export default function Home() {
   const [showPricingTooltip, setShowPricingTooltip] = useState(false);
@@ -61,6 +62,12 @@ export default function Home() {
                 </div>
               )}
             </div>
+            <button
+              onClick={() => scrollToSection('faq')}
+              className="text-base font-medium hover:text-primary transition-colors cursor-pointer"
+            >
+              FAQ
+            </button>
             <button
               onClick={() => scrollToSection('contact')}
               className="text-base font-medium hover:text-primary transition-colors cursor-pointer"
@@ -236,8 +243,78 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Get In Touch / Contact Section - NEW */}
-        <section id="contact" className="w-full py-12 md:py-24 lg:py-32 bg-white">
+        {/* FAQ Section */}
+        <section id="faq" className="w-full py-12 md:py-24 lg:py-32 bg-white">
+          <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">
+                Frequently Asked Questions
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Find answers to common questions about Sophos.ai
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger className="text-left">
+                  What is Sophos.ai and how does it work?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Sophos.ai is an AI-powered document processing platform that transforms static documents into interactive, living knowledge. Simply upload your PDFs, PowerPoint presentations, or paste YouTube video links, and our advanced AI will automatically extract key concepts, create visual concept maps, generate comprehensive notes, and build interactive timelines. You can then chat with your documents, take AI-generated quizzes, and enhance your learning experience with intelligent research capabilities.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2">
+                <AccordionTrigger className="text-left">
+                  What types of files can I upload to Sophos.ai?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Currently, Sophos.ai supports PDF documents and PowerPoint presentations (PPT, PPTX). We also support YouTube video processing by simply pasting the video URL. Our AI extracts text content from these formats, analyzes the information, and creates interactive learning materials. We're constantly working to expand our supported file types to include more document formats in the future.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3">
+                <AccordionTrigger className="text-left">
+                  How much does Sophos.ai cost?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Sophos.ai is currently free to use! We're in our early access phase and want as many students, researchers, and professionals as possible to experience the power of AI-enhanced document processing. Simply sign up with your email or Google account to get started. We'll announce any pricing plans well in advance as we continue to develop new features.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4">
+                <AccordionTrigger className="text-left">
+                  Is my data secure on Sophos.ai?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Yes, security is our top priority. We use industry-standard authentication through Supabase, and all file uploads are processed securely. Your documents are stored in a secure database, and we never share your content with third parties. Each user's data is isolated and only accessible through their authenticated account. We follow best practices for data encryption both in transit and at rest.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5">
+                <AccordionTrigger className="text-left">
+                  Can I use Sophos.ai for studying and note-taking?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Absolutely! Sophos.ai is perfect for students and anyone who wants to improve their learning. Our platform automatically generates organized notes from your documents, creates concept maps to visualize relationships between ideas, and generates quizzes to test your understanding. You can also chat with your documents to ask questions and get instant answers. Many users find it invaluable for studying textbooks, research papers, lecture slides, and educational YouTube videos.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-6">
+                <AccordionTrigger className="text-left">
+                  How do I get started with Sophos.ai?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Getting started is easy! Click the "Get Started" button to create a free account using your email or Google account. Once logged in, you'll see the dashboard where you can upload your first document or paste a YouTube link. If you don't have a document ready, try our sample document to explore all the features. The AI will process your content and display visual concept maps, timelines, and generate notes. You can then switch between different views using the tabs on the right panel to access chat, notes, and quiz features.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </section>
+
+        {/* Get In Touch / Contact Section */}
+        <section id="contact" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
           <div className="container px-4 md:px-6 max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">
@@ -259,10 +336,10 @@ export default function Home() {
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-gray-600 mb-1">Email</p>
                       <a
-                        href="mailto:contact@sophos.ai"
+                        href="mailto:thedakshjaitly@gmail.com"
                         className="text-base font-medium hover:text-primary transition-colors"
                       >
-                        contact@sophos.ai
+                        thedakshjaitly@gmail.com
                       </a>
                     </div>
                   </div>

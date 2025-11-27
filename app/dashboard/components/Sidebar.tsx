@@ -339,7 +339,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                                             </>
                                         ) : (
                                             <>
-                                                ✨ Try Sample Document
+                                                Try Sample Document
                                             </>
                                         )}
                                     </Button>
