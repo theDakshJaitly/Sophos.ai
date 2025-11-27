@@ -128,6 +128,7 @@ export default function DashboardPage() {
           recentUploads={recentUploads}
           setRecentUploads={setRecentUploads}
           setCurrentDocumentId={setCurrentDocumentId}
+          currentDocumentId={currentDocumentId}
           isLoading={isLoading}
         />
 

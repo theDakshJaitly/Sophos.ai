@@ -169,3 +169,44 @@ router.post('/upload', upload.single('file'), (req, res) => __awaiter(void 0, vo
         return res.status(500).json({ message: 'An unknown error occurred while processing the file.' });
     }
 }));
+// Get document by ID
+router.get('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const { id } = req.params;
+        const userId = (_a = res.locals.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated.' });
+        }
+        // Fetch document from database
+        const { data: document, error } = yield supabase_admin_1.supabaseAdmin
+            .from('documents')
+            .select('id, file_name, concepts, timeline, action_plan')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
+        if (error || !document) {
+            console.error('Error fetching document:', error);
+            return res.status(404).json({ message: 'Document not found.' });
+        }
+        // Clean and ensure proper structure
+        let safeConcepts = removeNullBytes(document.concepts || { nodes: [], edges: [] });
+        if (!safeConcepts.nodes)
+            safeConcepts.nodes = [];
+        if (!safeConcepts.edges)
+            safeConcepts.edges = [];
+        // Ensure timeline structure
+        let timeline = document.timeline || { events: [] };
+        if (!timeline.events)
+            timeline = { events: [] };
+        // Ensure action plan structure
+        let actionPlan = document.action_plan || { phases: [] };
+        if (!actionPlan.phases)
+            actionPlan = { phases: [] };
+        res.status(200).json(Object.assign(Object.assign({}, safeConcepts), { timeline: timeline.events, actionPlan: actionPlan, documentId: document.id, fileName: document.file_name }));
+    }
+    catch (error) {
+        console.error('Error in GET /documents/:id:', error);
+        res.status(500).json({ message: 'Error fetching document.' });
+    }
+}));
