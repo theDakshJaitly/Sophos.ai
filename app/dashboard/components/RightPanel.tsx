@@ -11,8 +11,20 @@ import { supabase } from '@/lib/supabase-client';
 import { User } from '@supabase/supabase-js';
 import { useDashboard } from "../context/DashboardContext";
 import { cn } from "@/lib/utils";
+import { UploadedFile } from '../page';
+import axios from 'axios';
+import { getApiUrl } from '@/lib/api';
 
-export function RightPanel() {
+interface RightPanelProps {
+  setWorkflowData: (data: any) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  recentUploads: UploadedFile[];
+  setRecentUploads: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+  setCurrentDocumentId: React.Dispatch<React.SetStateAction<string | null>>;
+  isLoading: boolean;
+}
+
+export function RightPanel({ setWorkflowData, setIsLoading, recentUploads, setRecentUploads, setCurrentDocumentId, isLoading }: RightPanelProps) {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -34,7 +46,6 @@ export function RightPanel() {
     router.push('/login'); // Redirect to login page after signing out
   };
 
-  // --- YOUR EXISTING FILE UPLOAD LOGIC (UNCHANGED) ---
   const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
@@ -51,8 +62,62 @@ export function RightPanel() {
   };
 
   const uploadFile = async (file: File) => {
-    // This is placeholder logic, as the main upload is in the Sidebar
-    toast({ title: "Note", description: "File upload is handled in the sidebar." });
+    if (!file) return;
+
+    setIsLoading(true);
+    setWorkflowData(null);
+    setUploading(true);
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error("Your session could not be verified. Please log in again.");
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers = {
+        'Authorization': `Bearer ${session.access_token}`
+      };
+
+      const response = await axios.post(
+        getApiUrl('documents/upload'),
+        formData,
+        { headers }
+      );
+
+      console.log('PDF Upload Response:', response.data);
+      setWorkflowData(response.data);
+
+      const documentId = response.data.documentId;
+      setRecentUploads(prev => [
+        { id: new Date().toISOString(), name: file.name, documentId },
+        ...prev
+      ].slice(0, 5));
+
+      if (documentId) {
+        setCurrentDocumentId(documentId);
+      }
+
+      toast({
+        title: "Success!",
+        description: `"${file.name}" was processed successfully.`,
+      });
+    } catch (error) {
+      const errMessage = (axios.isAxiosError(error) && error.response?.data?.message)
+        ? error.response.data.message
+        : error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: errMessage,
+      });
+      console.error("Upload failed:", error);
+    } finally {
+      setIsLoading(false);
+      setUploading(false);
+    }
   };
   // ---------------------------------------------------
 
