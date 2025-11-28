@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { TimelineSwimlane } from './timeline/TimelineSwimlane';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Color palette for categories
 const CATEGORY_COLORS = [
@@ -27,6 +28,10 @@ interface TimelineEvent {
 }
 
 export function TimelineView({ data }: { data: any }) {
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const EVENTS_PER_PAGE = 10;
+
     // Extract timeline events from data
     const events: TimelineEvent[] = useMemo(() => {
         if (!data?.timeline || !Array.isArray(data.timeline)) {
@@ -60,6 +65,38 @@ export function TimelineView({ data }: { data: any }) {
         return grouped;
     }, [events]);
 
+    // Flatten all events for pagination
+    const allEvents = useMemo(() => {
+        const categories = Object.keys(eventsByCategory);
+        return categories.flatMap(category =>
+            eventsByCategory[category].map(event => ({
+                ...event,
+                categoryName: category
+            }))
+        );
+    }, [eventsByCategory]);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(allEvents.length / EVENTS_PER_PAGE);
+    const startIndex = (currentPage - 1) * EVENTS_PER_PAGE;
+    const endIndex = startIndex + EVENTS_PER_PAGE;
+    const paginatedEvents = allEvents.slice(startIndex, endIndex);
+
+    // Group paginated events by category
+    const paginatedEventsByCategory = useMemo(() => {
+        const grouped: Record<string, TimelineEvent[]> = {};
+
+        paginatedEvents.forEach(event => {
+            const category = (event as any).categoryName || 'Uncategorized';
+            if (!grouped[category]) {
+                grouped[category] = [];
+            }
+            grouped[category].push(event);
+        });
+
+        return grouped;
+    }, [paginatedEvents]);
+
     // Assign colors to categories
     const categoryColors = useMemo(() => {
         const categories = Object.keys(eventsByCategory);
@@ -71,6 +108,11 @@ export function TimelineView({ data }: { data: any }) {
 
         return colors;
     }, [eventsByCategory]);
+
+    // Reset to page 1 when data changes
+    useMemo(() => {
+        setCurrentPage(1);
+    }, [data]);
 
     // Empty state
     if (events.length === 0) {
@@ -87,32 +129,63 @@ export function TimelineView({ data }: { data: any }) {
         );
     }
 
-    const categories = Object.keys(eventsByCategory);
-    const isSingleCategory = categories.length === 1;
+    const categories = Object.keys(paginatedEventsByCategory);
+    const allCategories = Object.keys(eventsByCategory);
+    const isSingleCategory = allCategories.length === 1;
 
     return (
-        <div className="h-full p-6 overflow-auto">
-            {/* Header */}
-            <div className="mb-6">
-                <h3 className="text-2xl font-bold mb-1">Timeline View</h3>
-                <p className="text-sm text-muted-foreground">
-                    {hasExplicitDates ? 'Chronological events with dates' : 'Sequential event progression'}
-                    {!isSingleCategory && ` • ${categories.length} storylines`}
-                </p>
+        <div className="h-full flex flex-col">
+            <div className="flex-1 p-6 overflow-auto">
+                {/* Header */}
+                <div className="mb-6">
+                    <h3 className="text-2xl font-bold mb-1">Timeline View</h3>
+                    <p className="text-sm text-muted-foreground">
+                        {hasExplicitDates ? 'Chronological events with dates' : 'Sequential event progression'}
+                        {!isSingleCategory && ` • ${allCategories.length} storylines`}
+                        {` • ${allEvents.length} total events`}
+                    </p>
+                </div>
+
+                {/* Timeline Content */}
+                <div className="space-y-8">
+                    {categories.map(category => (
+                        <TimelineSwimlane
+                            key={category}
+                            category={category}
+                            events={paginatedEventsByCategory[category]}
+                            color={categoryColors[category]}
+                            showDate={hasExplicitDates}
+                        />
+                    ))}
+                </div>
             </div>
 
-            {/* Timeline Content */}
-            <div className="space-y-8">
-                {categories.map(category => (
-                    <TimelineSwimlane
-                        key={category}
-                        category={category}
-                        events={eventsByCategory[category]}
-                        color={categoryColors[category]}
-                        showDate={hasExplicitDates}
-                    />
-                ))}
-            </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="border-t border-border p-4 flex items-center justify-center gap-4">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Previous page"
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    <span className="text-sm font-medium">
+                        Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-lg hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Next page"
+                    >
+                        <ChevronRight className="h-5 w-5" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

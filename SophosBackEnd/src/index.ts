@@ -9,6 +9,7 @@ import { documentRoutes } from './routes/document';
 import { chatRoutes } from './routes/chat';
 import { quizRoutes } from './routes/quiz';
 import { youtubeRoutes } from './routes/youtube';
+import { githubRoutes } from './routes/github';
 import { authMiddleware } from './middleware/auth';
 // import { projectRoutes } from './routes/projects'; // 👈 We are not using this for the MVP
 // import mongoose from 'mongoose'; // 👈 We are not using mongoose for the MVP
@@ -46,6 +47,7 @@ app.use('/api/documents', authMiddleware, documentRoutes);
 app.use('/api/chat', authMiddleware, chatRoutes);
 app.use('/api/quiz', authMiddleware, quizRoutes);
 app.use('/api/youtube', authMiddleware, youtubeRoutes);
+app.use('/api/github', authMiddleware, githubRoutes);
 // app.use('/api/projects', projectRoutes); // 👈 Disabled for MVP
 
 // --- DATABASE CONNECTION (DISABLED FOR MVP) ---
