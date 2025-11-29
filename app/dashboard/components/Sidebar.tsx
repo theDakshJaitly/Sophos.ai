@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase-client';
 import { getApiUrl } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { useDashboard } from '../context/DashboardContext';
+import { UploadModal } from './UploadModal';
 interface SidebarProps {
     setWorkflowData: (data: any) => void;
     setIsLoading: (isLoading: boolean) => void;
@@ -24,6 +25,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [githubUrl, setGithubUrl] = useState('');
     const [loadingSample, setLoadingSample] = useState(false);
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const { leftSidebarCollapsed, toggleLeftSidebar } = useDashboard();
 
     // Handler to select and load a document from recent uploads
@@ -307,6 +309,30 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             setLoadingSample(false);
         }
     };
+
+    // Wrapper handlers for modal
+    const handleModalYoutubeSubmit = (url: string) => {
+        setYoutubeUrl(url);
+        // Trigger the submit after state update
+        setTimeout(() => {
+            handleYoutubeSubmit();
+            setUploadModalOpen(false);
+        }, 0);
+    };
+
+    const handleModalGithubSubmit = (url: string) => {
+        setGithubUrl(url);
+        // Trigger the submit after state update
+        setTimeout(() => {
+            handleGithubSubmit();
+            setUploadModalOpen(false);
+        }, 0);
+    };
+
+    const handleModalPdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        handleFileChange(event);
+        setUploadModalOpen(false);
+    };
     return (
         <aside className={cn(
             "flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col p-4 transition-all duration-300",
@@ -385,77 +411,15 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                                     </Button>
                                 </div>
                             )}
-                            {/* GitHub URL Input */}
-                            <div className="space-y-2 mb-3">
-                                <label className="text-xs text-muted-foreground">Paste GitHub Repository Link</label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="text"
-                                        placeholder="https://github.com/owner/repo"
-                                        value={githubUrl}
-                                        onChange={(e) => setGithubUrl(e.target.value)}
-                                        disabled={isLoading}
-                                        className="flex-1 text-sm"
-                                        onKeyPress={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleGithubSubmit();
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        onClick={handleGithubSubmit}
-                                        disabled={isLoading || !githubUrl.trim()}
-                                        size="sm"
-                                    >
-                                        Go
-                                    </Button>
-                                </div>
-                            </div>
-                            {/* YouTube URL Input */}
-                            <div className="space-y-2 mb-3">
-                                <label className="text-xs text-muted-foreground">Paste YouTube Link</label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="text"
-                                        placeholder="https://youtube.com/watch?v=..."
-                                        value={youtubeUrl}
-                                        onChange={(e) => setYoutubeUrl(e.target.value)}
-                                        disabled={isLoading}
-                                        className="flex-1 text-sm"
-                                        onKeyPress={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleYoutubeSubmit();
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        onClick={handleYoutubeSubmit}
-                                        disabled={isLoading || !youtubeUrl.trim()}
-                                        size="sm"
-                                    >
-                                        Go
-                                    </Button>
-                                </div>
-                            </div>
-                            {/* Upload PDF Button */}
-                            <label htmlFor="file-upload">
-                                <Button
-                                    variant="default"
-                                    className="w-full"
-                                    disabled={isLoading}
-                                    onClick={() => document.getElementById('file-upload')?.click()}
-                                >
-                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upload PDF"}
-                                </Button>
-                                <input
-                                    id="file-upload"
-                                    type="file"
-                                    accept="application/pdf"
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                    disabled={isLoading}
-                                />
-                            </label>
+                            {/* Upload Source Button */}
+                            <Button
+                                variant="default"
+                                className="w-full"
+                                disabled={isLoading}
+                                onClick={() => setUploadModalOpen(true)}
+                            >
+                                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upload Source"}
+                            </Button>
                         </div>
                         {/* Current Session */}
                         <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
@@ -493,24 +457,26 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => document.getElementById('file-upload')?.click()}
+                            onClick={() => setUploadModalOpen(true)}
                             disabled={isLoading}
-                            title="Upload PDF"
+                            title="Upload Source"
                             className="w-12 h-12"
                         >
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                         </Button>
-                        <input
-                            id="file-upload"
-                            type="file"
-                            accept="application/pdf"
-                            onChange={handleFileChange}
-                            className="hidden"
-                            disabled={isLoading}
-                        />
                     </div>
                 </div>
             )}
+
+            {/* Upload Modal */}
+            <UploadModal
+                open={uploadModalOpen}
+                onOpenChange={setUploadModalOpen}
+                onPdfUpload={handleModalPdfUpload}
+                onYoutubeSubmit={handleModalYoutubeSubmit}
+                onGithubSubmit={handleModalGithubSubmit}
+                isLoading={isLoading}
+            />
         </aside>
     );
 }
