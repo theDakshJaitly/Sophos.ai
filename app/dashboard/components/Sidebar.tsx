@@ -285,7 +285,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
             setWorkflowData(uploadResponse.data);
             const documentId = uploadResponse.data.documentId;
             setRecentUploads(prev => [
-                { id: new Date().toISOString(), name: 'Sample Document', documentId },
+                { id: new Date().toISOString(), name: 'Sample Document', documentId, pdfUrl: '/sample-document.pdf' },
                 ...prev
             ].slice(0, 5));
             if (documentId) {
@@ -381,7 +381,7 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                                         <Button
                                             variant="ghost"
                                             className={cn(
-                                                "w-full justify-start text-sm truncate font-normal",
+                                                "w-full justify-start text-sm truncate font-normal hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors",
                                                 currentDocumentId === file.documentId && "bg-accent"
                                             )}
                                             onClick={() => handleSelectDocument(file)}
@@ -424,9 +424,36 @@ export function Sidebar({ setWorkflowData, setIsLoading, recentUploads, setRecen
                         {/* Current Session */}
                         <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
                             <h3 className="text-sm font-semibold text-muted-foreground mb-2">Current Session</h3>
-                            <p className="text-xs text-muted-foreground">
-                                {recentUploads.find(f => f.documentId === currentDocumentId)?.name || "No document loaded"}
-                            </p>
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs text-muted-foreground truncate">
+                                    {recentUploads.find(f => f.documentId === currentDocumentId)?.name || "No document loaded"}
+                                </p>
+                                {recentUploads.find(f => f.documentId === currentDocumentId)?.pdfUrl && (
+                                    <a
+                                        href={recentUploads.find(f => f.documentId === currentDocumentId)?.pdfUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-primary/80 transition-colors flex-shrink-0"
+                                        title="View PDF"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="14"
+                                            height="14"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                            <polyline points="15 3 21 3 21 9" />
+                                            <line x1="10" x2="21" y1="14" y2="3" />
+                                        </svg>
+                                    </a>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </>

@@ -16,6 +16,7 @@ export interface UploadedFile {
   id: string;
   name: string;
   documentId?: string; // Database document ID for quiz generation
+  pdfUrl?: string; // URL to the PDF file for viewing
 }
 
 export interface WorkflowData {

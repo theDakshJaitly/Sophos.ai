@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { SendHorizonal, Loader2 } from 'lucide-react';
+import { SendHorizonal, Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase-client';
 import { useDashboard } from '../../context/DashboardContext';
@@ -18,7 +18,11 @@ interface Message {
   content: string;
 }
 
-export function ChatTab() {
+interface ChatTabProps {
+  currentDocumentId: string | null;
+}
+
+export function ChatTab({ currentDocumentId }: ChatTabProps) {
   const STORAGE_KEY = 'sophos_chat_messages';
 
   // Initialize messages from sessionStorage
@@ -77,6 +81,19 @@ export function ChatTab() {
     }
   }, [messages]);
 
+  const handleClearChat = () => {
+    if (messages.length === 0) return;
+
+    if (window.confirm('Are you sure you want to clear the chat history?')) {
+      setMessages([]);
+      sessionStorage.removeItem(STORAGE_KEY);
+      toast({
+        title: "Chat cleared",
+        description: "Your chat history has been cleared.",
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -96,7 +113,11 @@ export function ChatTab() {
       // Use axios directly to ensure Authorization header is sent and URL is correct
       const response = await axios.post(
         getApiUrl('chat'),
-        { message: input },
+        {
+          message: input,
+          history: messages.slice(-10), // Send last 10 messages for context
+          documentId: currentDocumentId // Send current document ID
+        },
         {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
@@ -134,7 +155,23 @@ export function ChatTab() {
     <div className="flex flex-col h-full max-h-full overflow-hidden">
       {/* Fixed header */}
       <div className="flex-shrink-0 text-center p-4 border-b">
-        <h2 className="text-xl font-semibold">Chat with your Documents</h2>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex-1" />
+          <h2 className="text-xl font-semibold flex-1">Chat with your Documents</h2>
+          <div className="flex-1 flex justify-end">
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearChat}
+                className="text-muted-foreground hover:text-destructive"
+                title="Clear chat history"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground">Ask anything about the content of your uploaded PDFs.</p>
       </div>
 

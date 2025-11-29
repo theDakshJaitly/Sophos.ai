@@ -73,7 +73,7 @@ export function MainContent({ workflowData, isLoading, currentDocumentId }: Main
 
         {activeMode === 'chat' && (
           <div className="h-full flex flex-col">
-            <ChatTab />
+            <ChatTab currentDocumentId={currentDocumentId} />
           </div>
         )}
 
