@@ -10,6 +10,9 @@ Sophos.ai is an AI-powered document workflow platform that transforms static doc
 - **Web Research Integration**: AI agents search the web to enrich your documents with relevant, up-to-date information
 - **Interactive Mind Maps**: Visualize document concepts and relationships through interactive mind map diagrams
 - **Auto-Generated Notes**: Automatically create well-formatted study notes with main topics, key concepts, and summaries
+- **Quiz Generation**: AI-powered quiz creation from your documents for interactive learning
+- **GitHub Integration**: Process GitHub repositories to analyze codebases
+- **RAG-Powered Chat**: Chat with your documents using Retrieval-Augmented Generation with conversation history
 - **Authentication**: Secure login with email/password or Google OAuth integration
 - **Modern UI**: Premium glassmorphism design with dark mode support
 
@@ -28,8 +31,8 @@ Sophos.ai is an AI-powered document workflow platform that transforms static doc
 ### Backend
 - **Runtime**: Node.js with Express
 - **Language**: TypeScript
-- **Database**: MongoDB with Mongoose
-- **Authentication**: JWT and Supabase
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: JWT and Supabase Auth
 - **AI Services**: 
   - OpenAI for document processing
   - Groq SDK for fast inference
@@ -120,7 +123,7 @@ cd SophosBackEnd
 npm run dev
 ```
 
-The backend will run on `http://localhost:5001`
+The backend will run on `http://localhost:3001`
 
 2. In a new terminal, start the frontend:
 ```bash
@@ -170,6 +173,22 @@ npm start
 - `POST /api/notes/generate` - Generate AI notes from document
 - `PUT /api/notes/:id` - Update notes
 - `GET /api/notes/:id` - Retrieve notes
+
+### Chat
+- `POST /api/chat` - Chat with current document using RAG
+
+### Quiz
+- `POST /api/quiz/generate` - Generate quiz from document
+
+### GitHub
+- `POST /api/github/process` - Process GitHub repository
+
+## Documentation
+
+For more detailed documentation, see:
+- [API Documentation](./API.md) - Complete API endpoint reference
+- [Database Schema](./DATABASE.md) - Database tables and relationships
+- [Deployment Guide](./DEPLOYMENT.md) - Deployment instructions
 
 ## Configuration
 
